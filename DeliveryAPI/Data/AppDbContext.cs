@@ -21,4 +21,20 @@ public class AppDbContext : DbContext
     public DbSet<RecargaSaldo> RecargasSaldo { get; set; }
     public DbSet<Notificacion> Notificaciones { get; set; }
     public DbSet<HorarioRestaurante> HorariosRestaurante { get; set; }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // se recorren las tablas para conseguir las FK
+        foreach (var relationship in modelBuilder.Model.GetEntityTypes()
+                     .SelectMany(e => e.GetForeignKeys()))
+        {
+            // Con esto se le dice a sql server que cuando se borre un registro padre,
+            // no hagas nada automático con los hijos"
+            // para que se borra nada y solo se desactive con Activo = false,
+            // para no perder datos.
+            relationship.DeleteBehavior = DeleteBehavior.NoAction;
+        }
+    }
 }
