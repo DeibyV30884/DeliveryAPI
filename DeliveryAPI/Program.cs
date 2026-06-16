@@ -2,18 +2,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using DeliveryAPI.Data;
-using DeliveryAPI.Services;
-using DeliveryAPI.Services.Interfaces;
+using DeliveryAPI.Business.Interfaces;
+using DeliveryAPI.Business.Services;
+using DeliveryAPI.Business.Services.Interfaces;
+using DeliveryAPI.Data.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Swagger con soporte para JWT
-// para agrega un boton "Authorize" en Swagger para que podamos
-// probar endpoints protegidos sin usar Postman
 builder.Services.AddSwaggerGen(c =>
 {
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -41,13 +39,11 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Conexion a la base de datos
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer("name=DefaultConnection");
 });
 
-// CORS para que React pueda hablar con la API luego
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact", policy =>
@@ -58,7 +54,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// JWT: lee la configuracion del appsettings.json y valida los tokens
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -68,15 +63,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"], 
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey( 
+            IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
         };
-        
     });
 
+// Registrar AppDbContext también como IAppDbContext
+builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -87,7 +84,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowReact");
 app.UseHttpsRedirection();
-app.UseAuthentication(); // primero verifica quien es
-app.UseAuthorization();  // luego verifica que puedes hacer
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 app.Run();

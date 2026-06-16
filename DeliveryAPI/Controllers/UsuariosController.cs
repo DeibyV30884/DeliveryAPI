@@ -1,5 +1,5 @@
-using DeliveryAPI.Models.DTOs;
-using DeliveryAPI.Services.Interfaces;
+using DeliveryAPI.Business.DTOs;
+using DeliveryAPI.Business.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DeliveryAPI.Controllers;
