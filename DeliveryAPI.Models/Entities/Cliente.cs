@@ -8,6 +8,7 @@ public class Cliente
     public int ClienteId { get; set; }
     public int UsuarioId { get; set; }
     public string? DireccionPredeterminada { get; set; }
+    public string? LinkGoogleMaps { get; set; }
     public decimal? LatitudPredeterminada { get; set; }
     public decimal? LongitudPredeterminada { get; set; }
     public decimal Saldo { get; set; } = 0;

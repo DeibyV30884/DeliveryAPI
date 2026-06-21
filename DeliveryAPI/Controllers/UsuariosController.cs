@@ -23,4 +23,32 @@ public class UsuariosController : ControllerBase
             return Unauthorized(new { mensaje = resultado.Mensaje });
         return Ok(resultado.Datos);
     }
+
+    [HttpPost("registro/cliente")]
+    public async Task<IActionResult> RegistrarCliente(RegistroClienteDto dto)
+    {
+        var resultado = await _usuarioService.RegistrarCliente(dto);
+        if (!resultado.Exito)
+            return BadRequest(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
+    }
+
+    [HttpPost("registro/restaurante")]
+    public async Task<IActionResult> RegistrarRestaurante(RegistroRestauranteDto dto)
+    {
+        var resultado = await _usuarioService.RegistrarRestaurante(dto);
+        if (!resultado.Exito)
+            return BadRequest(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
+    }
+
+    [HttpPost("registro/repartidor")]
+    public async Task<IActionResult> RegistrarRepartidor(RegistroRepartidorDto dto)
+    {
+        var resultado = await _usuarioService.RegistrarRepartidor(dto);
+        if (!resultado.Exito)
+            return BadRequest(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
+    }
+    
 }

@@ -4,7 +4,6 @@ namespace DeliveryAPI.Business.DTOs;
 
 public class RegistroClienteDto
 {
-    // Campos de la tabla de Usuario
     [Required(ErrorMessage = "El nombre es obligatorio")]
     public string Nombre { get; set; } = "";
 
@@ -18,13 +17,12 @@ public class RegistroClienteDto
     [Required(ErrorMessage = "La contraseña es obligatoria")]
     public string Password { get; set; } = "";
 
+    [Required(ErrorMessage = "Debe confirmar la contraseña")]
+    [Compare(nameof(Password), ErrorMessage = "Las contraseñas no coinciden")]
+    public string ConfirmarPassword { get; set; } = "";
+
     public string? Telefono { get; set; }
 
     [Required(ErrorMessage = "La cédula es obligatoria")]
     public string Cedula { get; set; } = "";
-
-    // Campos de la tabla de Cliente (opcionales al registro)
-    public string? DireccionPredeterminada { get; set; }
-    public decimal? LatitudPredeterminada { get; set; }
-    public decimal? LongitudPredeterminada { get; set; }
 }

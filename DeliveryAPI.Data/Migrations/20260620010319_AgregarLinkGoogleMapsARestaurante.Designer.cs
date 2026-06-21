@@ -4,6 +4,7 @@ using DeliveryAPI.Data.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DeliveryAPI.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260620010319_AgregarLinkGoogleMapsARestaurante")]
+    partial class AgregarLinkGoogleMapsARestaurante
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -38,9 +41,6 @@ namespace DeliveryAPI.Data.Migrations
 
                     b.Property<decimal?>("LatitudPredeterminada")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("LinkGoogleMaps")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("LongitudPredeterminada")
                         .HasColumnType("decimal(18,2)");
@@ -349,6 +349,12 @@ namespace DeliveryAPI.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<TimeOnly>("HorarioApertura")
+                        .HasColumnType("time");
+
+                    b.Property<TimeOnly>("HorarioCierre")
+                        .HasColumnType("time");
+
                     b.Property<decimal>("Latitud")
                         .HasColumnType("decimal(18,2)");
 
@@ -388,9 +394,11 @@ namespace DeliveryAPI.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Apellido")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Cedula")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Email")
@@ -418,8 +426,7 @@ namespace DeliveryAPI.Data.Migrations
                     b.HasKey("UsuarioId");
 
                     b.HasIndex("Cedula")
-                        .IsUnique()
-                        .HasFilter("[Cedula] IS NOT NULL");
+                        .IsUnique();
 
                     b.HasIndex("Email")
                         .IsUnique();
@@ -460,7 +467,7 @@ namespace DeliveryAPI.Data.Migrations
             modelBuilder.Entity("DeliveryAPI.Models.Entities.HorarioRestaurante", b =>
                 {
                     b.HasOne("DeliveryAPI.Models.Entities.Restaurante", "Restaurante")
-                        .WithMany("Horarios")
+                        .WithMany()
                         .HasForeignKey("RestauranteId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
@@ -563,11 +570,6 @@ namespace DeliveryAPI.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("DeliveryAPI.Models.Entities.Restaurante", b =>
-                {
-                    b.Navigation("Horarios");
                 });
 #pragma warning restore 612, 618
         }

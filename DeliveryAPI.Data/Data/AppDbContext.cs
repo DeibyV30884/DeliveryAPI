@@ -27,8 +27,12 @@ public class AppDbContext : DbContext, IAppDbContext
 
         modelBuilder.Entity<Usuario>()
             .HasIndex(u => u.Email).IsUnique();
+
         modelBuilder.Entity<Usuario>()
-            .HasIndex(u => u.Cedula).IsUnique();
+            .HasIndex(u => u.Cedula)
+            .IsUnique()
+            .HasFilter("[Cedula] IS NOT NULL");   // <-- permite múltiples NULL
+
         modelBuilder.Entity<Restaurante>()
             .HasIndex(r => r.CedulaJuridica).IsUnique();
 
