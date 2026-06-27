@@ -7,3 +7,7 @@ export function login(credenciales) {
 export function registrarCliente(datos) {
     return apiClient.post('/api/Usuarios/registro/cliente', datos)
 }
+
+export function registrarRestaurante(datos) {
+    return apiClient.post('/api/Usuarios/registro/restaurante', datos)
+}

@@ -72,7 +72,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 // Registrar AppDbContext también como IAppDbContext
 builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
-builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
+builder.Services.AddScoped<IRestauranteService, RestauranteService>();
+builder.Services.AddScoped<IRepartidorService, RepartidorService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
+builder.Services.AddScoped<IUsuarioValidacionService, UsuarioValidacionService>();
 
 var app = builder.Build();
 
