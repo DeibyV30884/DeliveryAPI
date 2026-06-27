@@ -88,6 +88,11 @@ function Login() {
                     <p className="text-slate-200 text-center mt-6">
                         <Link to="/registro/restaurante" className="text-yellow-400 font-semibold">Asocia Tu Restaurante</Link>
                     </p>
+
+                    <p className="text-slate-200 text-center mt-6">
+                        <Link to="/registro/repartidor" className="text-yellow-400 font-semibold">Trabaja Con Nosotros</Link>
+                    </p>
+
                 </div>
             </div>
         </div>
