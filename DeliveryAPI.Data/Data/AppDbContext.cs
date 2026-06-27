@@ -23,7 +23,6 @@ public class AppDbContext : DbContext, IAppDbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<Usuario>()
             .HasIndex(u => u.Email).IsUnique();
@@ -41,5 +40,55 @@ public class AppDbContext : DbContext, IAppDbContext
         {
             relationship.DeleteBehavior = DeleteBehavior.NoAction;
         }
+        
+        // Restaurante
+        modelBuilder.Entity<Restaurante>(entity =>
+        {
+            entity.Property(r => r.Latitud).HasPrecision(9, 6);
+            entity.Property(r => r.Longitud).HasPrecision(9, 6);
+        });
+
+        // Cliente
+        modelBuilder.Entity<Cliente>(entity =>
+        {
+            entity.Property(c => c.LatitudPredeterminada).HasPrecision(9, 6);
+            entity.Property(c => c.LongitudPredeterminada).HasPrecision(9, 6);
+            entity.Property(c => c.Saldo).HasPrecision(10, 2);
+        });
+
+        // Repartidor
+        modelBuilder.Entity<Repartidor>(entity =>
+        {
+            entity.Property(r => r.LatitudActual).HasPrecision(9, 6);
+            entity.Property(r => r.LongitudActual).HasPrecision(9, 6);
+        });
+
+        // Pedido
+        modelBuilder.Entity<Pedido>(entity =>
+        {
+            entity.Property(p => p.LatitudEntrega).HasPrecision(9, 6);
+            entity.Property(p => p.LongitudEntrega).HasPrecision(9, 6);
+            entity.Property(p => p.Subtotal).HasPrecision(10, 2);
+            entity.Property(p => p.ComisionPlataforma).HasPrecision(10, 2);
+            entity.Property(p => p.CostoEnvio).HasPrecision(10, 2);
+            entity.Property(p => p.Total).HasPrecision(10, 2);
+            entity.Property(p => p.DistanciaKm).HasPrecision(6, 2);
+        });
+
+        // Producto
+        modelBuilder.Entity<Producto>(entity =>
+        {
+            entity.Property(p => p.Precio).HasPrecision(10, 2);
+            entity.Property(p => p.PrecioDescuento).HasPrecision(10, 2);
+        });
+
+        // RecargaSaldo
+        modelBuilder.Entity<RecargaSaldo>(entity =>
+        {
+            entity.Property(r => r.Monto).HasPrecision(10, 2);
+        });
+
+        base.OnModelCreating(modelBuilder);
     }
 }
+
