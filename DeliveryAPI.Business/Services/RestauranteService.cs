@@ -127,4 +127,14 @@ public class RestauranteService : IRestauranteService
 
         return null;
     }
+    
+    public async Task<ServiceResult> ObtenerRestaurantesActivos()
+    {
+        var restaurantes = await _context.Restaurantes
+            .Where(r => r.Activo)
+            .Select(r => new { r.RestauranteId, r.NombreRestaurante })
+            .ToListAsync();
+
+        return ServiceResult.Ok(restaurantes);
+    }
 }

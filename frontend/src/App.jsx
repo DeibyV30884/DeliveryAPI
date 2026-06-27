@@ -4,6 +4,7 @@ import Login from './pages/auth/Login'
 import RutaProtegida from './components/RutaProtegida'
 import RegistroCliente from './pages/auth/RegistroCliente'
 import RegistroRestaurante from './pages/auth/RegistroRestaurante'
+import RegistroRepartidor from './pages/auth/RegistroRepartidor'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
             <Route path="/" element={<Login />} />
               <Route path="/registro/cliente" element={<RegistroCliente />} />
               <Route path="/registro/restaurante" element={<RegistroRestaurante />} />
+              <Route path="/registro/repartidor" element={<RegistroRepartidor />} />
               <Route
                   path="/cliente"
                   element={
