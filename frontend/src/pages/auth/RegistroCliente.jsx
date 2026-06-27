@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { registrarCliente } from '../../api/usuarios'
-import Header from '../../components/Header'
+import HeaderRegistro from "../../components/HeaderRegistro.jsx";
 
 function RegistroCliente() {
     const [formData, setFormData] = useState({
@@ -37,6 +37,8 @@ function RegistroCliente() {
             const datosError = error.response?.data
             if (datosError?.errors) {
                 setErrores(Object.values(datosError.errors).flat())
+            } else if (datosError?.mensaje) {
+                setErrores([datosError.mensaje])
             } else {
                 setErrores(['Ocurrió un error al registrar. Intenta de nuevo.'])
             }
@@ -58,11 +60,11 @@ function RegistroCliente() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-900">
-            <Header/>
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4 py-10">
+        <div className="min-h-screen bg-slate-900 flex flex-col">
+            <HeaderRegistro/>
+        <div className=" flex-1 flex bg-slate-900 items-center justify-center px-4 py-10">
             <div className="bg-slate-700 rounded-2xl p-8 w-full max-w-2xl">
-                <h1 className="text-3xl font-bold text-lime-400 text-center mb-1">
+                <h1 className="text-7xl font-bold text-lime-400 text-center mb-1">
                     Formulario de Registro
                 </h1>
                 <p className="text-white text-center mb-6">Registro de Cliente</p>

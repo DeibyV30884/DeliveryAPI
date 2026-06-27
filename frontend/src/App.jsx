@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext'
 import Login from './pages/auth/Login'
 import RutaProtegida from './components/RutaProtegida'
 import RegistroCliente from './pages/auth/RegistroCliente'
+import RegistroRestaurante from './pages/auth/RegistroRestaurante'
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Login />} />
               <Route path="/registro/cliente" element={<RegistroCliente />} />
+              <Route path="/registro/restaurante" element={<RegistroRestaurante />} />
               <Route
                   path="/cliente"
                   element={
