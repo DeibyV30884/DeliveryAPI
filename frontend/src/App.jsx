@@ -5,6 +5,9 @@ import RutaProtegida from './components/RutaProtegida'
 import RegistroCliente from './pages/auth/RegistroCliente'
 import RegistroRestaurante from './pages/auth/RegistroRestaurante'
 import RegistroRepartidor from './pages/auth/RegistroRepartidor'
+import PanelCliente from './pages/cliente/PanelCliente'
+import PerfilCliente from './pages/cliente/PerfilCliente'
+
 
 function App() {
   return (
@@ -19,10 +22,15 @@ function App() {
                   path="/cliente"
                   element={
                       <RutaProtegida rolesPermitidos={['Cliente']}>
-                          <h1>Panel Cliente (pendiente)</h1>
+                          <PanelCliente />
                       </RutaProtegida>
                   }
-              />
+              >
+                  <Route path="perfil" element={<PerfilCliente />} />
+                  <Route path="restaurantes" element={<h1 className="text-white">Explorar Restaurantes pendiente</h1>} />
+                  <Route path="seguimiento" element={<h1 className="text-white">Seguimiento pendiente</h1>} />
+                  <Route path="historial" element={<h1 className="text-white">Historial pendiente</h1>} />
+              </Route>
               <Route
                   path="/restaurante"
                   element={

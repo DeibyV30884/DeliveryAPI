@@ -12,6 +12,10 @@ public class EditarClienteDto
     public string Apellido { get; set; } = "";
 
     public string? Telefono { get; set; }
+    
+    [Required(ErrorMessage = "El correo es obligatorio")]
+    [EmailAddress(ErrorMessage = "El correo no es válido")]
+    public string Email { get; set; } = "";
 
     // Si viene null o vacio no se cambia la contraseña
     [MinLength(8, ErrorMessage = "La contraseña debe tener al menos 8 caracteres")]
@@ -19,8 +23,7 @@ public class EditarClienteDto
         ErrorMessage = "La contraseña tiene que tener al menos una mayuscula, una minuscula, un número y un caracter especial (@$!%*?&)" )]
     public string? Password { get; set; }
 
-    public string? DireccionPredeterminada {get; set; }
-    public decimal? LatitudPredeterminada { get; set; }
-    public decimal? LongitudPredeterminada { get; set; }
+    public string? DireccionPredeterminada { get; set; }
+    public string? LinkGoogleMaps { get; set; }
     
 }
