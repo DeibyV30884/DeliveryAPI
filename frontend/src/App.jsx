@@ -7,6 +7,8 @@ import RegistroRestaurante from './pages/auth/RegistroRestaurante'
 import RegistroRepartidor from './pages/auth/RegistroRepartidor'
 import PanelCliente from './pages/cliente/PanelCliente'
 import PerfilCliente from './pages/cliente/PerfilCliente'
+import PerfilRestaurante from './pages/restaurante/PerfilRestaurante'
+import PanelRestaurante from './pages/restaurante/PanelRestaurante';
 
 
 function App() {
@@ -35,13 +37,19 @@ function App() {
                   path="/restaurante"
                   element={
                       <RutaProtegida rolesPermitidos={['Restaurante']}>
-                          <h1>Panel Restaurante (pendiente)</h1>
+                          <PanelRestaurante />
                       </RutaProtegida>
                   }
-              />
+              >
+                <Route path="perfil" element={<PerfilRestaurante />} />
+                <Route path="gestionporducto" element={<h1 className="text-white">Explorar Restaurantes pendiente</h1>} />
+                <Route path="repartidores" element={<h1 className="text-white">Seguimiento pendiente</h1>} />
+                <Route path="pedidos" element={<h1 className="text-white">Historial pendiente</h1>} />
+                </Route>
               <Route
                   path="/repartidor"
                   element={
+
                       <RutaProtegida rolesPermitidos={['Repartidor']}>
                           <h1>Panel Repartidor (pendiente)</h1>
                       </RutaProtegida>

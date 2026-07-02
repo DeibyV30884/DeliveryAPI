@@ -8,17 +8,17 @@ public class GoogleMapsService : IGoogleMapsService
 {
     public (decimal lat, decimal lng)? ExtraerCoordenadasDeLink(string link)
     {
-        // Patron 1: @lat,lng (más común en links de navegación)
-        var match = Regex.Match(link, @"@(-?\d+\.\d+),(-?\d+\.\d+)");
+        // Patron 1, prioridad: !3d lat !4d lng — coordenadas exactas, es mas especifico que los otros
+        var match = Regex.Match(link, @"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)");
         if (!match.Success)
             // Patron 2: q=lat,lng 
             match = Regex.Match(link, @"q=(-?\d+\.\d+),(-?\d+\.\d+)");
         if (!match.Success)
-            // Patron 3:  !3d lat !4d lng (links de lugar específico)
-            match = Regex.Match(link, @"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)");
-        if (!match.Success)
-            // Patron 4:  /place/ con coordenadas en ll=lat,lng
+            // Patron 3:  con coordenadas en ll=lat,lng
             match = Regex.Match(link, @"ll=(-?\d+\.\d+),(-?\d+\.\d+)");
+        if (!match.Success)
+            // Patron 4, ultimo recurso: @lat,lng — solo el centro del viewport
+            match = Regex.Match(link, @"@(-?\d+\.\d+),(-?\d+\.\d+)");
 
         // Si ninguno da las coordenadas, el link no sirve
         if (!match.Success)
