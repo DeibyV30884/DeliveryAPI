@@ -17,6 +17,24 @@ const iconoUbicacion = new L.Icon({
     iconAnchor: [20, 40],
 })
 
+const DIAS_SEMANA = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
+
+function Toggle({ checked, onChange }) {
+    return (
+        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input
+                type="checkbox"
+                checked={checked}
+                onChange={onChange}
+                className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-slate-400 rounded-full peer-checked:bg-lime-400 transition-colors"></div>
+            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+        </label>
+    )
+}
+
+
 function ActualizarMapa(props) {
     const coords = props.coords
     const map = useMap()
@@ -44,6 +62,10 @@ function PerfilRestaurante() {
         linkGoogleMaps: '',
     })
 
+    const [horarios, setHorarios] = useState(
+        DIAS_SEMANA.map((dia) => ({ dia, abierto: false, horaApertura: '', horaCierre: '' }))
+    )
+
     const [coords, setCoords] = useState(null)
 
     const [error, setError] = useState('')
@@ -65,6 +87,17 @@ function PerfilRestaurante() {
                     direccion: d.direccion || '',
                     linkGoogleMaps: d.linkGoogleMaps || '',
                 })
+
+                if (d.horarios) {
+                    setHorarios(
+                        d.horarios.map((h) => ({
+                            dia: h.dia,
+                            abierto: h.abierto,
+                            horaApertura: h.horaApertura ? h.horaApertura.slice(0, 5) : '',
+                            horaCierre: h.horaCierre ? h.horaCierre.slice(0, 5) : '',
+                        }))
+                    )
+                }
 
                 if (d.latitud && d.longitud) {
                     const lat = parseFloat(d.latitud)
@@ -91,6 +124,20 @@ function PerfilRestaurante() {
         })
     }
 
+    function handleToggleDia(dia) {
+        setHorarios((prev) =>
+            prev.map((h) => (h.dia === dia ? { ...h, abierto: !h.abierto } : h))
+        )
+    }
+
+
+    function handleHorarioChange(dia, campo, valor) {
+        setHorarios((prev) =>
+            prev.map((h) => (h.dia === dia ? { ...h, [campo]: valor } : h))
+        )
+    }
+
+
     async function handleUbicar() {
         if (formData.linkGoogleMaps.trim() === '') {
             setError('Pega un link de Google Maps primero')
@@ -114,7 +161,13 @@ function PerfilRestaurante() {
         setError('')
         setExito('')
 
-        const payload = { ...formData }
+        const payload = { ...formData, horarios: horarios.map((h) => ({
+                dia: h.dia,
+                abierto: h.abierto,
+                horaApertura: h.abierto && h.horaApertura ? `${h.horaApertura}:00` : null,
+                horaCierre: h.abierto && h.horaCierre ? `${h.horaCierre}:00` : null,
+            })),
+        }
         if (!payload.password || payload.password.trim() === '') {
             delete payload.password
         }
@@ -125,6 +178,17 @@ function PerfilRestaurante() {
 
             const res = await obtenerPerfilRestaurante()
             const d = res.data
+
+            if (d.horarios) {
+                setHorarios(
+                    d.horarios.map((h) => ({
+                        dia: h.dia,
+                        abierto: h.abierto,
+                        horaApertura: h.horaApertura ? h.horaApertura.slice(0, 5) : '',
+                        horaCierre: h.horaCierre ? h.horaCierre.slice(0, 5) : '',
+                    }))
+                )
+            }
 
             if (d.latitud && d.longitud) {
                 const lat = parseFloat(d.latitud)
@@ -211,6 +275,32 @@ function PerfilRestaurante() {
                         <input name="password" type="password" value={formData.password} onChange={handleChange}
                                placeholder="Dejar vacío para no cambiar"
                                className="w-full rounded-full px-4 py-2 outline-none bg-white text-slate-900 text-sm" />
+                    </div>
+
+                    <h2 className="text-white font-bold tracking-wide mt-2">HORARIO DE OPERACIÓN</h2>
+                    <div className="flex flex-col gap-2">
+                        {horarios.map((h) => (
+                            <div key={h.dia} className="flex items-center gap-3 text-white text-sm">
+                                <span className="w-20 shrink-0">{h.dia}:</span>
+                                <Toggle checked={h.abierto} onChange={() => handleToggleDia(h.dia)} />
+                                <span className="w-14 shrink-0">{h.abierto ? 'Abierto' : 'Cerrado'}</span>
+                                <input
+                                    type="time"
+                                    disabled={!h.abierto}
+                                    value={h.horaApertura}
+                                    onChange={(e) => handleHorarioChange(h.dia, 'horaApertura', e.target.value)}
+                                    className="rounded-full px-2 py-1 outline-none bg-white text-slate-900 text-xs disabled:opacity-40"
+                                />
+                                <span>a</span>
+                                <input
+                                    type="time"
+                                    disabled={!h.abierto}
+                                    value={h.horaCierre}
+                                    onChange={(e) => handleHorarioChange(h.dia, 'horaCierre', e.target.value)}
+                                    className="rounded-full px-2 py-1 outline-none bg-white text-slate-900 text-xs disabled:opacity-40"
+                                />
+                            </div>
+                        ))}
                     </div>
                 </div>
 

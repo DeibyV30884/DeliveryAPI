@@ -147,6 +147,25 @@ public class RestauranteService : IRestauranteService
         .FirstOrDefaultAsync(r => r.UsuarioId == usuarioId);
     if (restaurante == null)
         return ServiceResult.Fallo("Datos de restaurante no encontrados");
+    
+    var horariosGuardados = await _context.HorariosRestaurante
+        .Where(h => h.RestauranteId == restaurante.RestauranteId)
+        .ToListAsync();
+    
+    
+    var horarios = DiasValidos.Select(dia =>
+    {
+        
+        var h = horariosGuardados.FirstOrDefault(x => x.Dia == dia);
+        return new
+        {
+            Dia = dia, 
+            Abierto = h != null,
+            HoraApertura = h?.HoraApertura,
+            HoraCierre = h?.HoraCierre
+            
+        };
+    }).ToList();
 
     return ServiceResult.Ok(new
     {
@@ -158,7 +177,8 @@ public class RestauranteService : IRestauranteService
         restaurante.LinkGoogleMaps,
         restaurante.Latitud,
         restaurante.Longitud,
-        restaurante.AceptaComision
+        restaurante.AceptaComision,
+        Horarios = horarios
     });
 }
 
@@ -174,6 +194,11 @@ public async Task<ServiceResult> EditarPerfil(int usuarioId, EditarRestauranteDt
         .FirstOrDefaultAsync(r => r.UsuarioId == usuarioId);
     if (restaurante == null)
         return ServiceResult.Fallo("Datos de restaurante no encontrados");
+    
+    var errorHorario = ValidarHorarios(dto.Horarios);
+    if (errorHorario != null)
+        
+        return ServiceResult.Fallo(errorHorario);
     
     usuario.Nombre = dto.NombreRestaurante;
     usuario.Telefono = dto.Telefono;
@@ -203,6 +228,23 @@ public async Task<ServiceResult> EditarPerfil(int usuarioId, EditarRestauranteDt
         restaurante.Latitud = coordenadas.Value.lat;
         restaurante.Longitud = coordenadas.Value.lng;
     }
+    var horariosActuales = _context.HorariosRestaurante
+        .Where(h => h.RestauranteId == restaurante.RestauranteId);
+    _context.HorariosRestaurante.RemoveRange(horariosActuales);
+
+    foreach (var h in dto.Horarios.Where(h => h.Abierto))
+    {
+        _context.HorariosRestaurante.Add(new HorarioRestaurante
+        {
+            
+            RestauranteId = restaurante.RestauranteId,
+            Dia = h.Dia,
+            HoraApertura =  h.HoraApertura!.Value,
+            HoraCierre = h.HoraCierre!.Value 
+        });
+        
+    }
+    
     await _context.SaveChangesAsync();
     
     return ServiceResult.Ok(new { mensaje = "Perfil actualizado correctamente" });
