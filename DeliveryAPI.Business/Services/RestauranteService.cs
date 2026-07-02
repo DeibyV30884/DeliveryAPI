@@ -50,7 +50,6 @@ public class RestauranteService : IRestauranteService
         var usuario = new Usuario
         {
             Nombre = dto.NombreRestaurante,
-            Apellido = null,
             Email = dto.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             Telefono = dto.Telefono,
@@ -137,4 +136,94 @@ public class RestauranteService : IRestauranteService
 
         return ServiceResult.Ok(restaurantes);
     }
+    public async Task<ServiceResult> ObtenerPerfil(int usuarioId)
+{
+    var usuario = await _context.Usuarios
+        .FirstOrDefaultAsync(u => u.UsuarioId == usuarioId && u.Activo);
+    if (usuario == null)
+        return ServiceResult.Fallo("Restaurante no encontrado");
+
+    var restaurante = await _context.Restaurantes
+        .FirstOrDefaultAsync(r => r.UsuarioId == usuarioId);
+    if (restaurante == null)
+        return ServiceResult.Fallo("Datos de restaurante no encontrados");
+
+    return ServiceResult.Ok(new
+    {
+        usuario.Email,
+        usuario.Telefono,
+        restaurante.NombreRestaurante,
+        restaurante.CedulaJuridica,
+        restaurante.Direccion,
+        restaurante.LinkGoogleMaps,
+        restaurante.Latitud,
+        restaurante.Longitud,
+        restaurante.AceptaComision
+    });
+}
+
+public async Task<ServiceResult> EditarPerfil(int usuarioId, EditarRestauranteDto dto)
+{
+    
+    var usuario = await _context.Usuarios
+        .FirstOrDefaultAsync(u => u.UsuarioId == usuarioId && u.Activo);
+    if (usuario == null)
+        return ServiceResult.Fallo("Restaurante no encontrado");
+
+    var restaurante = await _context.Restaurantes
+        .FirstOrDefaultAsync(r => r.UsuarioId == usuarioId);
+    if (restaurante == null)
+        return ServiceResult.Fallo("Datos de restaurante no encontrados");
+    
+    usuario.Nombre = dto.NombreRestaurante;
+    usuario.Telefono = dto.Telefono;
+
+    if (usuario.Email != dto.Email)
+    {
+        bool emailEnUso = await _context.Usuarios
+            .AnyAsync(u => u.Email == dto.Email && u.UsuarioId != usuarioId);
+        if (emailEnUso)
+            return ServiceResult.Fallo("El correo electrónico ya está en uso");
+        usuario.Email = dto.Email;
+    }
+
+    if (!string.IsNullOrWhiteSpace(dto.Password))
+        usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+    restaurante.NombreRestaurante = dto.NombreRestaurante;
+    restaurante.Direccion = dto.Direccion;
+
+    if (!string.IsNullOrWhiteSpace(dto.LinkGoogleMaps))
+    {
+        var coordenadas = _googleMapsService.ExtraerCoordenadasDeLink(dto.LinkGoogleMaps);
+        if (coordenadas == null)
+            return ServiceResult.Fallo("No se pudieron extraer coordenadas válidas del link de Google Maps");
+
+        restaurante.LinkGoogleMaps = dto.LinkGoogleMaps;
+        restaurante.Latitud = coordenadas.Value.lat;
+        restaurante.Longitud = coordenadas.Value.lng;
+    }
+    await _context.SaveChangesAsync();
+    
+    return ServiceResult.Ok(new { mensaje = "Perfil actualizado correctamente" });
+}
+
+    public async Task<ServiceResult> DesactivarPerfil(int usuarioId)
+    {
+        var usuario = await _context.Usuarios
+           .FirstOrDefaultAsync(u => u.UsuarioId == usuarioId && u.Activo);
+        if (usuario == null)
+            return ServiceResult.Fallo("Restaurante no encontrado");
+
+        var restaurante = await _context.Restaurantes
+            .FirstOrDefaultAsync(r => r.UsuarioId == usuarioId);
+        if (restaurante != null)
+            restaurante.Activo = false;
+
+        usuario.Activo = false;
+        await _context.SaveChangesAsync();
+
+        return ServiceResult.Ok(new { mensaje = "Perfil desactivado correctamente" });
+    }
+    
 }
