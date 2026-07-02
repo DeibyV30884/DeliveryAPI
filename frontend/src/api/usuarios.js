@@ -41,3 +41,21 @@ export function extraerCoordenadas(link) {
         headers: { 'Content-Type': 'application/json' }
     })
 }
+
+export function obtenerPerfilRestaurante() {
+    return apiClient.get('/api/Restaurante/perfil')
+}
+
+export function editarPerfilRestaurante(datos) {
+    return apiClient.put('/api/Restaurante/perfil', datos)
+}
+
+export function desactivarPerfilRestaurante() {
+    return apiClient.put('/api/Restaurante/perfil/desactivar')
+}
+
+export function extraerCoordenadasRestaurante(link) {
+    return apiClient.post('/api/Restaurante/extraer-coordenadas', JSON.stringify(link), {
+        headers: { 'Content-Type': 'application/json' }
+    })
+}
