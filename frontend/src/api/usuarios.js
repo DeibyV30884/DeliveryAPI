@@ -1,5 +1,7 @@
 import apiClient from './client'
 
+// Login y registro
+
 export function login(credenciales) {
     return apiClient.post('/api/Usuarios/login', credenciales)
 }
@@ -19,6 +21,8 @@ export function obtenerRestaurantes() {
 export function registrarRepartidor(datos) {
     return apiClient.post('/api/Usuarios/registro/repartidor', datos)
 }
+
+// Cliente
 
 export function obtenerPerfilCliente() {
     return apiClient.get('/api/Clientes/perfil')
@@ -42,6 +46,7 @@ export function extraerCoordenadas(link) {
     })
 }
 
+// Restaurante
 export function obtenerPerfilRestaurante() {
     return apiClient.get('/api/Restaurante/perfil')
 }
@@ -58,4 +63,18 @@ export function extraerCoordenadasRestaurante(link) {
     return apiClient.post('/api/Restaurante/extraer-coordenadas', JSON.stringify(link), {
         headers: { 'Content-Type': 'application/json' }
     })
+}
+
+// Repartidor
+
+export function obtenerPerfilRepartidor() {
+    return apiClient.get('/api/Repartidores/perfil')
+}
+
+export function editarPerfilRepartidor(datos) {
+    return apiClient.put('/api/Repartidores/perfil', datos)
+}
+
+export function desactivarPerfilRepartidor() {
+    return apiClient.put('/api/Repartidores/desactivar')
 }
