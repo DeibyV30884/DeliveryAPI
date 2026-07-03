@@ -28,4 +28,5 @@ public class Pedido
     public Cliente? Cliente { get; set; }
     public Restaurante? Restaurante { get; set; }
     public Repartidor? Repartidor { get; set; }
+    public ICollection<DetallePedido> DetallesPedido { get; set; } = new List<DetallePedido>();
 }
