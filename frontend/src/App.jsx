@@ -9,6 +9,8 @@ import PanelCliente from './pages/cliente/PanelCliente'
 import PerfilCliente from './pages/cliente/PerfilCliente'
 import PerfilRestaurante from './pages/restaurante/PerfilRestaurante'
 import PanelRestaurante from './pages/restaurante/PanelRestaurante';
+import PanelRepartidor from './pages/repartidor/PanelRepartidor'
+import PerfilRepartidor from './pages/repartidor/PerfilRepartidor'
 
 
 function App() {
@@ -49,12 +51,16 @@ function App() {
               <Route
                   path="/repartidor"
                   element={
-
                       <RutaProtegida rolesPermitidos={['Repartidor']}>
-                          <h1>Panel Repartidor (pendiente)</h1>
+                          <PanelRepartidor />
                       </RutaProtegida>
                   }
-              />
+              >
+                  <Route path="panelprincipal" element={<h1 className="text-white">Panel Principal pendiente</h1>} />
+                  <Route path="pedidoactivo" element={<h1 className="text-white">Pedido activo pendiente</h1>} />
+                  <Route path="historialyestadisticas" element={<h1 className="text-white">Historial y estadísticas pendiente</h1>} />
+                  <Route path="perfil" element={<PerfilRepartidor />} />
+              </Route>
               <Route
                   path="/admin"
                   element={
