@@ -21,6 +21,7 @@ public class RestauranteController : ControllerBase
     }
     
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> ObtenerRestaurantes()
     {
         var resultado = await _restauranteService.ObtenerRestaurantesActivos();
