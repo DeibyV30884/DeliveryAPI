@@ -15,7 +15,7 @@ export function registrarRestaurante(datos) {
 }
 
 export function obtenerRestaurantes() {
-    return apiClient.get('/api/Restaurantes')
+    return apiClient.get('/api/Restaurante')
 }
 
 export function registrarRepartidor(datos) {
