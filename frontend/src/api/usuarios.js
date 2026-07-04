@@ -76,5 +76,23 @@ export function editarPerfilRepartidor(datos) {
 }
 
 export function desactivarPerfilRepartidor() {
-    return apiClient.put('/api/Repartidores/desactivar')
+    return apiClient.put('/api/Repartidores/perfil/desactivar')
+}
+
+// Administrador
+
+export function obtenerPerfilAdministrador() {
+    return apiClient.get('/api/Administrador/perfil')
+}
+
+export function editarPerfilAdministrador(datos) {
+    return apiClient.put('/api/Administrador/perfil', datos)
+}
+
+export function desactivarPerfilAdministrador() {
+    return apiClient.put('/api/Administrador/perfil/desactivar')
+}
+
+export function registrarAdministrador(datos) {
+    return apiClient.post('/api/Administrador/registro', datos)
 }

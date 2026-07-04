@@ -11,6 +11,8 @@ import PerfilRestaurante from './pages/restaurante/PerfilRestaurante'
 import PanelRestaurante from './pages/restaurante/PanelRestaurante';
 import PanelRepartidor from './pages/repartidor/PanelRepartidor'
 import PerfilRepartidor from './pages/repartidor/PerfilRepartidor'
+import PanelAdministrador from './pages/administrador/PanelAdministrador'
+import PerfilAdministrador from './pages/administrador/PerfilAdministrador'
 
 
 function App() {
@@ -62,13 +64,19 @@ function App() {
                   <Route path="perfil" element={<PerfilRepartidor />} />
               </Route>
               <Route
-                  path="/admin"
+                  path="/administrador"
                   element={
-                      <RutaProtegida rolesPermitidos={['Admin']}>
-                          <h1>Panel Admin (pendiente)</h1>
+                      <RutaProtegida rolesPermitidos={['Administrador']}>
+                          <PanelAdministrador />
                       </RutaProtegida>
                   }
-              />
+              >
+                  <Route path="panelprincipal" element={<h1 className="text-white">Panel Principal pendiente</h1>} />
+                  <Route path="gestionusuarios" element={<h1 className="text-white">Gestión de Usuarios pendiente</h1>} />
+                  <Route path="recargarsaldo" element={<h1 className="text-white">Recargar Saldo pendiente</h1>} />
+                  <Route path="perfil" element={<PerfilAdministrador />} />
+              </Route>
+
           </Routes>
         </BrowserRouter>
       </AuthProvider>
