@@ -13,7 +13,9 @@ import PanelRepartidor from './pages/repartidor/PanelRepartidor'
 import PerfilRepartidor from './pages/repartidor/PerfilRepartidor'
 import PanelAdministrador from './pages/administrador/PanelAdministrador'
 import PerfilAdministrador from './pages/administrador/PerfilAdministrador'
-
+import ExplorarRestaurantes from './pages/cliente/ExplorarRestaurantes'
+import ProductosRestaurante from './pages/cliente/ProductosRestaurante'
+import DetalleProducto from './pages/cliente/DetalleProducto'
 
 function App() {
   return (
@@ -33,7 +35,9 @@ function App() {
                   }
               >
                   <Route path="perfil" element={<PerfilCliente />} />
-                  <Route path="restaurantes" element={<h1 className="text-white">Explorar Restaurantes pendiente</h1>} />
+                  <Route path="restaurantes" element={<ExplorarRestaurantes />} />
+                  <Route path="restaurantes/:restauranteId" element={<ProductosRestaurante />} />
+                  <Route path="restaurantes/:restauranteId/productos/:productoId" element={<DetalleProducto />}/>
                   <Route path="seguimiento" element={<h1 className="text-white">Seguimiento pendiente</h1>} />
                   <Route path="historial" element={<h1 className="text-white">Historial pendiente</h1>} />
               </Route>
