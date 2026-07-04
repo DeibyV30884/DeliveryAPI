@@ -79,6 +79,7 @@ builder.Services.AddScoped<IRepartidorService, RepartidorService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
 builder.Services.AddScoped<IUsuarioValidacionService, UsuarioValidacionService>();
+builder.Services.AddScoped<IAdministradorService, AdministradorService>();
 
 var app = builder.Build();
 
