@@ -18,6 +18,15 @@ export function obtenerRestaurantes() {
     return apiClient.get('/api/Restaurante')
 }
 
+export function obtenerProductosRestaurante(restauranteId) {
+    return apiClient.get(`/api/Productos/restaurante/${restauranteId}`)
+}
+
+export function obtenerProductoPorId(productoId) {
+    return apiClient.get(`/api/Productos/${productoId}`)
+}
+
+
 export function registrarRepartidor(datos) {
     return apiClient.post('/api/Usuarios/registro/repartidor', datos)
 }
