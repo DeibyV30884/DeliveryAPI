@@ -22,7 +22,7 @@ namespace DeliveryAPI.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("DeliveryAPI.Models.Cliente", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Cliente", b =>
                 {
                     b.Property<int>("ClienteId")
                         .ValueGeneratedOnAdd()
@@ -37,13 +37,19 @@ namespace DeliveryAPI.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("LatitudPredeterminada")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<string>("LinkGoogleMaps")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("LongitudPredeterminada")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
 
                     b.Property<decimal>("Saldo")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<int>("UsuarioId")
                         .HasColumnType("int");
@@ -55,7 +61,7 @@ namespace DeliveryAPI.Data.Migrations
                     b.ToTable("Clientes");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.DetallePedido", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.DetallePedido", b =>
                 {
                     b.Property<int>("DetalleId")
                         .ValueGeneratedOnAdd()
@@ -87,7 +93,7 @@ namespace DeliveryAPI.Data.Migrations
                     b.ToTable("DetallesPedido");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.HorarioRestaurante", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.HorarioRestaurante", b =>
                 {
                     b.Property<int>("HorarioId")
                         .ValueGeneratedOnAdd()
@@ -115,7 +121,7 @@ namespace DeliveryAPI.Data.Migrations
                     b.ToTable("HorariosRestaurante");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.Notificacion", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Notificacion", b =>
                 {
                     b.Property<int>("NotificacionId")
                         .ValueGeneratedOnAdd()
@@ -143,7 +149,7 @@ namespace DeliveryAPI.Data.Migrations
                     b.ToTable("Notificaciones");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.Pedido", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Pedido", b =>
                 {
                     b.Property<int>("PedidoId")
                         .ValueGeneratedOnAdd()
@@ -159,17 +165,20 @@ namespace DeliveryAPI.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("ComisionPlataforma")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<decimal>("CostoEnvio")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<string>("DireccionEntrega")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("DistanciaKm")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(6, 2)
+                        .HasColumnType("decimal(6,2)");
 
                     b.Property<string>("Estado")
                         .IsRequired()
@@ -182,10 +191,12 @@ namespace DeliveryAPI.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("LatitudEntrega")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
 
                     b.Property<decimal>("LongitudEntrega")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
 
                     b.Property<string>("NotaCliente")
                         .HasColumnType("nvarchar(max)");
@@ -197,13 +208,15 @@ namespace DeliveryAPI.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("Subtotal")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<int>("TiempoEstimadoMin")
                         .HasColumnType("int");
 
                     b.Property<decimal>("Total")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
 
                     b.HasKey("PedidoId");
 
@@ -216,7 +229,7 @@ namespace DeliveryAPI.Data.Migrations
                     b.ToTable("Pedidos");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.Producto", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Producto", b =>
                 {
                     b.Property<int>("ProductoId")
                         .ValueGeneratedOnAdd()
@@ -238,10 +251,12 @@ namespace DeliveryAPI.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Precio")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<decimal?>("PrecioDescuento")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<int>("RestauranteId")
                         .HasColumnType("int");
@@ -256,7 +271,7 @@ namespace DeliveryAPI.Data.Migrations
                     b.ToTable("Productos");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.RecargaSaldo", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.RecargaSaldo", b =>
                 {
                     b.Property<int>("RecargaId")
                         .ValueGeneratedOnAdd()
@@ -274,7 +289,8 @@ namespace DeliveryAPI.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("Monto")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<string>("Nota")
                         .IsRequired()
@@ -289,7 +305,7 @@ namespace DeliveryAPI.Data.Migrations
                     b.ToTable("RecargasSaldo");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.Repartidor", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Repartidor", b =>
                 {
                     b.Property<int>("RepartidorId")
                         .ValueGeneratedOnAdd()
@@ -304,10 +320,12 @@ namespace DeliveryAPI.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<decimal?>("LatitudActual")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
 
                     b.Property<decimal?>("LongitudActual")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
 
                     b.Property<int>("RestauranteId")
                         .HasColumnType("int");
@@ -324,7 +342,7 @@ namespace DeliveryAPI.Data.Migrations
                     b.ToTable("Repartidores");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.Restaurante", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Restaurante", b =>
                 {
                     b.Property<int>("RestauranteId")
                         .ValueGeneratedOnAdd()
@@ -346,17 +364,17 @@ namespace DeliveryAPI.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<TimeOnly>("HorarioApertura")
-                        .HasColumnType("time");
-
-                    b.Property<TimeOnly>("HorarioCierre")
-                        .HasColumnType("time");
-
                     b.Property<decimal>("Latitud")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<string>("LinkGoogleMaps")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Longitud")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
 
                     b.Property<string>("NombreRestaurante")
                         .IsRequired()
@@ -375,7 +393,7 @@ namespace DeliveryAPI.Data.Migrations
                     b.ToTable("Restaurantes");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.Usuario", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Usuario", b =>
                 {
                     b.Property<int>("UsuarioId")
                         .ValueGeneratedOnAdd()
@@ -387,11 +405,9 @@ namespace DeliveryAPI.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Apellido")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Cedula")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Email")
@@ -419,7 +435,8 @@ namespace DeliveryAPI.Data.Migrations
                     b.HasKey("UsuarioId");
 
                     b.HasIndex("Cedula")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[Cedula] IS NOT NULL");
 
                     b.HasIndex("Email")
                         .IsUnique();
@@ -427,9 +444,9 @@ namespace DeliveryAPI.Data.Migrations
                     b.ToTable("Usuarios");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.Cliente", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Cliente", b =>
                 {
-                    b.HasOne("DeliveryAPI.Models.Usuario", "Usuario")
+                    b.HasOne("DeliveryAPI.Models.Entities.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.NoAction)
@@ -438,15 +455,15 @@ namespace DeliveryAPI.Data.Migrations
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.DetallePedido", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.DetallePedido", b =>
                 {
-                    b.HasOne("DeliveryAPI.Models.Pedido", "Pedido")
+                    b.HasOne("DeliveryAPI.Models.Entities.Pedido", "Pedido")
                         .WithMany()
                         .HasForeignKey("PedidoId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.HasOne("DeliveryAPI.Models.Producto", "Producto")
+                    b.HasOne("DeliveryAPI.Models.Entities.Producto", "Producto")
                         .WithMany()
                         .HasForeignKey("ProductoId")
                         .OnDelete(DeleteBehavior.NoAction)
@@ -457,10 +474,10 @@ namespace DeliveryAPI.Data.Migrations
                     b.Navigation("Producto");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.HorarioRestaurante", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.HorarioRestaurante", b =>
                 {
-                    b.HasOne("DeliveryAPI.Models.Restaurante", "Restaurante")
-                        .WithMany()
+                    b.HasOne("DeliveryAPI.Models.Entities.Restaurante", "Restaurante")
+                        .WithMany("Horarios")
                         .HasForeignKey("RestauranteId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
@@ -468,9 +485,9 @@ namespace DeliveryAPI.Data.Migrations
                     b.Navigation("Restaurante");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.Notificacion", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Notificacion", b =>
                 {
-                    b.HasOne("DeliveryAPI.Models.Usuario", "Usuario")
+                    b.HasOne("DeliveryAPI.Models.Entities.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.NoAction)
@@ -479,20 +496,20 @@ namespace DeliveryAPI.Data.Migrations
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.Pedido", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Pedido", b =>
                 {
-                    b.HasOne("DeliveryAPI.Models.Cliente", "Cliente")
+                    b.HasOne("DeliveryAPI.Models.Entities.Cliente", "Cliente")
                         .WithMany()
                         .HasForeignKey("ClienteId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.HasOne("DeliveryAPI.Models.Repartidor", "Repartidor")
+                    b.HasOne("DeliveryAPI.Models.Entities.Repartidor", "Repartidor")
                         .WithMany()
                         .HasForeignKey("RepartidorId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.HasOne("DeliveryAPI.Models.Restaurante", "Restaurante")
+                    b.HasOne("DeliveryAPI.Models.Entities.Restaurante", "Restaurante")
                         .WithMany()
                         .HasForeignKey("RestauranteId")
                         .OnDelete(DeleteBehavior.NoAction)
@@ -505,9 +522,9 @@ namespace DeliveryAPI.Data.Migrations
                     b.Navigation("Restaurante");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.Producto", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Producto", b =>
                 {
-                    b.HasOne("DeliveryAPI.Models.Restaurante", "Restaurante")
+                    b.HasOne("DeliveryAPI.Models.Entities.Restaurante", "Restaurante")
                         .WithMany()
                         .HasForeignKey("RestauranteId")
                         .OnDelete(DeleteBehavior.NoAction)
@@ -516,15 +533,15 @@ namespace DeliveryAPI.Data.Migrations
                     b.Navigation("Restaurante");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.RecargaSaldo", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.RecargaSaldo", b =>
                 {
-                    b.HasOne("DeliveryAPI.Models.Usuario", "Admin")
+                    b.HasOne("DeliveryAPI.Models.Entities.Usuario", "Admin")
                         .WithMany()
                         .HasForeignKey("AdminId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.HasOne("DeliveryAPI.Models.Cliente", "Cliente")
+                    b.HasOne("DeliveryAPI.Models.Entities.Cliente", "Cliente")
                         .WithMany()
                         .HasForeignKey("ClienteId")
                         .OnDelete(DeleteBehavior.NoAction)
@@ -535,15 +552,15 @@ namespace DeliveryAPI.Data.Migrations
                     b.Navigation("Cliente");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.Repartidor", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Repartidor", b =>
                 {
-                    b.HasOne("DeliveryAPI.Models.Restaurante", "Restaurante")
+                    b.HasOne("DeliveryAPI.Models.Entities.Restaurante", "Restaurante")
                         .WithMany()
                         .HasForeignKey("RestauranteId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.HasOne("DeliveryAPI.Models.Usuario", "Usuario")
+                    b.HasOne("DeliveryAPI.Models.Entities.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.NoAction)
@@ -554,15 +571,20 @@ namespace DeliveryAPI.Data.Migrations
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("DeliveryAPI.Models.Restaurante", b =>
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Restaurante", b =>
                 {
-                    b.HasOne("DeliveryAPI.Models.Usuario", "Usuario")
+                    b.HasOne("DeliveryAPI.Models.Entities.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("DeliveryAPI.Models.Entities.Restaurante", b =>
+                {
+                    b.Navigation("Horarios");
                 });
 #pragma warning restore 612, 618
         }

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DeliveryAPI.Business.DTOs;
 
-public class UsuarioDto
+public class RegistroAdministradorDto
 {
     [Required(ErrorMessage = "El nombre es obligatorio")]
     public string Nombre { get; set; } = "";
@@ -17,9 +17,12 @@ public class UsuarioDto
     [Required(ErrorMessage = "La contraseña es obligatoria")]
     public string Password { get; set; } = "";
 
+    [Required(ErrorMessage = "Debe confirmar la contraseña")]
+    [Compare(nameof(Password), ErrorMessage = "Las contraseñas no coinciden")]
+    public string ConfirmarPassword { get; set; } = "";
+
     public string? Telefono { get; set; }
 
     [Required(ErrorMessage = "La cédula es obligatoria")]
-    public string Cedula { get; set; } = "" ;
-    
+    public string Cedula { get; set; } = "";
 }

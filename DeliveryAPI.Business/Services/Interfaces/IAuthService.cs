@@ -2,7 +2,7 @@ using DeliveryAPI.Business.DTOs;
 
 namespace DeliveryAPI.Business.Services.Interfaces;
 
-public interface IUsuarioService
+public interface IAuthService
 {
     Task<ServiceResult> Login(LoginDto dto);
 }
