@@ -75,6 +75,7 @@ builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbConte
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IPedidoService, PedidoService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
 
 var app = builder.Build();
 
