@@ -1,10 +1,8 @@
-using DeliveryAPI.Business.Interfaces;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using DeliveryAPI.Business.DTOs;
 using DeliveryAPI.Business.Services.Interfaces;
-
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace DeliveryAPI.Controllers;
 
@@ -12,108 +10,87 @@ namespace DeliveryAPI.Controllers;
 [Route("api/[controller]")]
 public class ProductosController : ControllerBase
 {
-    private readonly IAppDbContext _context;
     private readonly IProductoService _productoService;
 
-    public ProductosController(IAppDbContext context, IProductoService productoService)
+    public ProductosController(IProductoService productoService)
     {
-        _context = context;
         _productoService = productoService;
     }
+
+    private int ObtenerUsuarioId() =>
+        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet("restaurante/{restauranteId}")]
     [AllowAnonymous]
     public async Task<IActionResult> ObtenerProductosPorRestaurante(int restauranteId)
     {
-        var restauranteExiste = await _context.Restaurantes
-            .AnyAsync(r => r.RestauranteId == restauranteId && r.Activo);
-
-        if (!restauranteExiste)
-            return NotFound(new { mensaje = "Restaurante no encontrado" });
-
-        var productos = await _context.Productos
-            .Where(p => p.RestauranteId == restauranteId && p.Activo)
-            .Select(p => new
-            {
-                p.ProductoId,
-                p.Nombre,
-                p.Descripcion,
-                p.Precio,
-                p.PrecioDescuento,
-                p.ImagenUrl,
-                p.TiempoPreparacionMin
-            })
-            .ToListAsync();
-
-        return Ok(productos);
+        var resultado = await _productoService.ObtenerProductosPorRestaurante(restauranteId);
+        if (!resultado.Exito)
+            return NotFound(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
     }
 
     [HttpGet("{productoId}")]
     [AllowAnonymous]
     public async Task<IActionResult> ObtenerProductoPorId(int productoId)
     {
-        var producto = await _context.Productos
-            .Where(p => p.ProductoId == productoId && p.Activo)
-            .Select(p => new
-            {
-                p.ProductoId,
-                p.RestauranteId,
-                p.Nombre,
-                p.Descripcion,
-                p.Precio,
-                p.PrecioDescuento,
-                p.ImagenUrl,
-                p.TiempoPreparacionMin
-            })
-            .FirstOrDefaultAsync();
-
-        if (producto == null)
-            return NotFound(new { mensaje = "Producto no encontrado" });
-
-        return Ok(producto);
-    }
-    [HttpGet("gestion/restaurante/{restauranteId}")]
-    public async Task<IActionResult> ObtenerProductosGestionRestaurante(int restauranteId)
-    {
-        var resultado = await _productoService.ObtenerProductosGestionRestaurante(restauranteId);
-
+        var resultado = await _productoService.ObtenerDetalleProducto(productoId);
         if (!resultado.Exito)
-            return BadRequest(resultado);
-
-        return Ok(resultado);
+            return NotFound(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
     }
 
+    [HttpGet("buscar")]
+    [AllowAnonymous]
+    public async Task<IActionResult> BuscarProductos([FromQuery] string termino)
+    {
+        var resultado = await _productoService.BuscarProductos(termino);
+        return Ok(resultado.Datos);
+    }
+
+    [Authorize(Roles = "Restaurante")]
+    [HttpGet("gestion")]
+    public async Task<IActionResult> ObtenerProductosGestionRestaurante()
+    {
+        var resultado = await _productoService.ObtenerProductosGestionRestaurante(ObtenerUsuarioId());
+        if (!resultado.Exito)
+            return BadRequest(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
+    }
+
+    [Authorize(Roles = "Restaurante")]
     [HttpPost]
     public async Task<IActionResult> CrearProducto([FromBody] CrearProductoDto dto)
     {
-        var resultado = await _productoService.CrearProducto(dto);
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
 
+        var resultado = await _productoService.CrearProducto(ObtenerUsuarioId(), dto);
         if (!resultado.Exito)
-            return BadRequest(resultado);
-
-        return Ok(resultado);
+            return BadRequest(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
     }
 
+    [Authorize(Roles = "Restaurante")]
     [HttpPut("{productoId}")]
     public async Task<IActionResult> EditarProducto(int productoId, [FromBody] EditarProductoDto dto)
     {
-        var resultado = await _productoService.EditarProducto(productoId, dto);
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
 
+        var resultado = await _productoService.EditarProducto(ObtenerUsuarioId(), productoId, dto);
         if (!resultado.Exito)
-            return BadRequest(resultado);
-
-        return Ok(resultado);
+            return BadRequest(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
     }
 
+    [Authorize(Roles = "Restaurante")]
     [HttpDelete("{productoId}")]
     public async Task<IActionResult> EliminarProducto(int productoId)
     {
-        var resultado = await _productoService.EliminarProducto(productoId);
-
+        var resultado = await _productoService.EliminarProducto(ObtenerUsuarioId(), productoId);
         if (!resultado.Exito)
-            return BadRequest(resultado);
-
-        return Ok(resultado);
+            return BadRequest(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
     }
-    
 }
