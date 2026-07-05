@@ -13,6 +13,9 @@ import PanelRepartidor from './pages/repartidor/PanelRepartidor'
 import PerfilRepartidor from './pages/repartidor/PerfilRepartidor'
 import PanelAdministrador from './pages/administrador/PanelAdministrador'
 import PerfilAdministrador from './pages/administrador/PerfilAdministrador'
+import GestionProductos from "./pages/restaurante/GestionProductos";
+import AgregarProducto from "./pages/restaurante/AgregarProducto";
+import EditarProducto from "./pages/restaurante/EditarProducto";
 
 
 function App() {
@@ -46,7 +49,9 @@ function App() {
                   }
               >
                 <Route path="perfil" element={<PerfilRestaurante />} />
-                <Route path="gestionporducto" element={<h1 className="text-white">Explorar Restaurantes pendiente</h1>} />
+                <Route path="gestionproducto" element={<GestionProductos />} />
+                <Route path="agregarproducto" element={<AgregarProducto />} />
+                <Route path="editarproducto/:id" element={<EditarProducto />} />
                 <Route path="repartidores" element={<h1 className="text-white">Seguimiento pendiente</h1>} />
                 <Route path="pedidos" element={<h1 className="text-white">Historial pendiente</h1>} />
                 </Route>
