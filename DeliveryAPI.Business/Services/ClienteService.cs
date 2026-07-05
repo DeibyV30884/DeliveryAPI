@@ -50,7 +50,6 @@ public class ClienteService : IClienteService
             LongitudPredeterminada = null,
             Saldo = 0,
             Activo = true
-            
         };
 
         _context.Clientes.Add(cliente);
@@ -63,7 +62,7 @@ public class ClienteService : IClienteService
             mensaje = "Cliente registrado correctamente"
         });
     }
-    
+
     public async Task<ServiceResult> ObtenerPerfil(int usuarioId)
     {
         var usuario = await _context.Usuarios
@@ -90,7 +89,7 @@ public class ClienteService : IClienteService
             cliente.Saldo
         });
     }
-    
+
     public async Task<ServiceResult> EditarPerfil(int usuarioId, EditarClienteDto dto)
     {
         var usuario = await _context.Usuarios
@@ -106,7 +105,7 @@ public class ClienteService : IClienteService
         usuario.Nombre = dto.Nombre;
         usuario.Apellido = dto.Apellido;
         usuario.Telefono = dto.Telefono;
-        
+
         if (usuario.Email != dto.Email)
         {
             bool emailEnUso = await _context.Usuarios
@@ -126,18 +125,16 @@ public class ClienteService : IClienteService
                 return ServiceResult.Fallo("No se pudieron extraer coordenadas válidas del link de Google Maps");
 
             cliente.LinkGoogleMaps = dto.LinkGoogleMaps;
-            
             cliente.LatitudPredeterminada = coordenadas.Value.lat;
             cliente.LongitudPredeterminada = coordenadas.Value.lng;
-        } 
+        }
 
         cliente.DireccionPredeterminada = dto.DireccionPredeterminada;
-
         await _context.SaveChangesAsync();
 
         return ServiceResult.Ok(new { mensaje = "Perfil actualizado correctamente" });
     }
-    
+
     public async Task<ServiceResult> DesactivarPerfil(int usuarioId)
     {
         var usuario = await _context.Usuarios
@@ -146,7 +143,7 @@ public class ClienteService : IClienteService
             return ServiceResult.Fallo("Cliente no encontrado");
 
         var cliente = await _context.Clientes
-            .FirstOrDefaultAsync(c =>  c.UsuarioId == usuarioId);
+            .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId);
         if (cliente != null)
             cliente.Activo = false;
 
@@ -155,7 +152,7 @@ public class ClienteService : IClienteService
 
         return ServiceResult.Ok(new { mensaje = "Perfil desactivado correctamente" });
     }
-    
+
     public async Task<ServiceResult> ObtenerSaldo(int usuarioId)
     {
         var cliente = await _context.Clientes

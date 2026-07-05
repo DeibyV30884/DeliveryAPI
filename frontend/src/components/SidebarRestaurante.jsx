@@ -7,7 +7,7 @@ function SidebarRestaurante() {
 
     const links = [
         { to: '/restaurante/pedidos', label: 'Pedidos Entrantes' },
-        { to: '/restaurante/gestionporducto', label: 'Gestión de producto' },
+        { to: '/restaurante/gestionproducto', label: 'Gestión de producto' },
         { to: '/restaurante/repartidores', label: 'Mapa de repartidores' },
         { to: '/restaurante/perfil', label: 'Perfil' },
     ]

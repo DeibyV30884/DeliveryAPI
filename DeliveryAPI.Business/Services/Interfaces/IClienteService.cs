@@ -8,6 +8,5 @@ public interface IClienteService
     Task<ServiceResult> ObtenerPerfil(int usuarioId);
     Task<ServiceResult> EditarPerfil(int usuarioId, EditarClienteDto dto);
     Task<ServiceResult> DesactivarPerfil(int usuarioId);
-    
-    Task<ServiceResult> ObtenerSaldo (int usuarioId);
+    Task<ServiceResult> ObtenerSaldo(int usuarioId);
 }
