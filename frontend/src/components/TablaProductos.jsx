@@ -1,12 +1,25 @@
 import { useNavigate } from "react-router-dom";
+import { Pencil, Trash2 } from "lucide-react";
 
-function TablaProductos() {
+function TablaProductos({ productos, onEliminar }) {
     const navigate = useNavigate();
+
+    if (!productos || productos.length === 0) {
+        return (
+            <div className="mt-8">
+                < h2 className="mb-4 text-lg font-semibold uppercase text-white">
+                    Tabla de Productos
+                </h2>
+                <p className="text-slate-300">No hay productos para mostrar.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="mt-8">
             <h2 className="mb-4 text-lg font-semibold uppercase text-white">
                 Tabla de Productos
+
             </h2>
 
             <div className="overflow-hidden rounded-2xl border border-slate-700">
@@ -18,77 +31,65 @@ function TablaProductos() {
                         <th className="px-4 py-3 text-center font-medium">Precio</th>
                         <th className="px-4 py-3 text-center font-medium">Precio con descuento</th>
                         <th className="px-4 py-3 text-center font-medium">Tiempo preparación</th>
+                        <th className="px-4 py-3 text-center font-medium">Estado</th>
                         <th className="px-4 py-3 text-center font-medium">Acciones</th>
+
                     </tr>
                     </thead>
 
                     <tbody className="bg-slate-700 text-white">
-                    <tr className="border-t border-slate-600">
-                        <td className="px-4 py-2">Pollo Frito</td>
-                        <td className="px-4 py-2">Cubo de 6 porciones</td>
-                        <td className="px-4 py-2 text-center">₡5500</td>
-                        <td className="px-4 py-2 text-center">₡3500</td>
-                        <td className="px-4 py-2 text-center">30 min</td>
-                        <td className="px-4 py-2">
-                            <div className="flex justify-center gap-2">
-                                <button
-                                    onClick={() => navigate("/restaurante/editarproducto/1")}
-                                    className="rounded-full border border-white px-2 py-1 hover:bg-slate-600"
-                                >
-                                    ✏️
-                                </button>
+                    {productos.map((p) => {
+                        let claseFila = "border-t border-slate-600";
+                        if (!p.activo) {
+                            claseFila = "border-t border-slate-600 opacity-50";
+                        }
 
-                                <button className="rounded-full border border-white px-2 py-1 hover:bg-red-700">
-                                    🗑️
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                        return (
+                            <tr key={p.productoId} className={claseFila}>
+                                <td className="px-4 py-2">{p.nombre}</td>
+                                <td className="px-4 py-2">{p.descripcion}</td>
+                                <td className="px-4 py-2 text-center">₡{p.precio}</td>
+                                <td className="px-4 py-2 text-center">
+                                    {p.precioDescuento ? `₡${p.precioDescuento}` : "—"}
+                                </td>
+                                <td className="px-4 py-2 text-center">{p.tiempoPreparacionMin} min</td>
+                                <td className="px-4 py-2 text-center">
+                                    {p.activo ? (
+                                        <span className="rounded-full bg-lime-400 px-3 py-1 text-xs font-semibold text-slate-900">
+                                            Disponible
+                                        </span>
+                                    ) : (
+                                        <span className="rounded-full bg-slate-500 px-3 py-1 text-xs font-semibold text-slate-100">
+                                            Inactivo
+                                        </span>
+                                    )}
+                                </td>
+                                <td className="px-4 py-2">
+                                    <div className="flex justify-center gap-2">
+                                        <button
+                                            onClick={() => navigate(`/restaurante/editarproducto/${p.productoId}`)}
+                                            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-400 text-slate-200 transition hover:border-lime-400 hover:text-lime-400"
+                                            title="Editar producto"
+                                        >
+                                            <Pencil size={16} />
+                                        </button>
 
-                    <tr className="border-t border-slate-600">
-                        <td className="px-4 py-2">Papas</td>
-                        <td className="px-4 py-2">Papas con salsa</td>
-                        <td className="px-4 py-2 text-center">₡5500</td>
-                        <td className="px-4 py-2 text-center">₡3500</td>
-                        <td className="px-4 py-2 text-center">30 min</td>
-                        <td className="px-4 py-2">
-                            <div className="flex justify-center gap-2">
-                                <button
-                                    onClick={() => navigate("/restaurante/editarproducto/2")}
-                                    className="rounded-full border border-white px-2 py-1 hover:bg-slate-600"
-                                >
-                                    ✏️
-                                </button>
-
-                                <button className="rounded-full border border-white px-2 py-1 hover:bg-red-700">
-                                    🗑️
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <tr className="border-t border-slate-600">
-                        <td className="px-4 py-2">Coca Cola</td>
-                        <td className="px-4 py-2">600 ml</td>
-                        <td className="px-4 py-2 text-center">₡5500</td>
-                        <td className="px-4 py-2 text-center">₡3500</td>
-                        <td className="px-4 py-2 text-center">1 min</td>
-                        <td className="px-4 py-2">
-                            <div className="flex justify-center gap-2">
-                                <button
-                                    onClick={() => navigate("/restaurante/editarproducto/3")}
-                                    className="rounded-full border border-white px-2 py-1 hover:bg-slate-600"
-                                >
-                                    ✏️
-                                </button>
-
-                                <button className="rounded-full border border-white px-2 py-1 hover:bg-red-700">
-                                    🗑️
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                                        {p.activo && (
+                                            <button
+                                                onClick={() => onEliminar(p.productoId)}
+                                                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-400 text-slate-200 transition hover:border-red-500 hover:bg-red-500 hover:text-white"
+                                                title="Desactivar producto"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </td>
+                            </tr>
+                        );
+                    })}
                     </tbody>
+
                 </table>
             </div>
         </div>

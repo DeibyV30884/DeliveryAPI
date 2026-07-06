@@ -11,10 +11,12 @@ namespace DeliveryAPI.Controllers;
 public class ProductosController : ControllerBase
 {
     private readonly IProductoService _productoService;
+    private readonly IImagenService _imagenService;
 
-    public ProductosController(IProductoService productoService)
+    public ProductosController(IProductoService productoService, IImagenService imagenService)
     {
         _productoService = productoService;
+        _imagenService = imagenService;
     }
 
     private int ObtenerUsuarioId() =>
@@ -47,7 +49,7 @@ public class ProductosController : ControllerBase
         var resultado = await _productoService.BuscarProductos(termino);
         return Ok(resultado.Datos);
     }
-
+    
     [Authorize(Roles = "Restaurante")]
     [HttpGet("gestion")]
     public async Task<IActionResult> ObtenerProductosGestionRestaurante()
@@ -89,6 +91,16 @@ public class ProductosController : ControllerBase
     public async Task<IActionResult> EliminarProducto(int productoId)
     {
         var resultado = await _productoService.EliminarProducto(ObtenerUsuarioId(), productoId);
+        if (!resultado.Exito)
+            return BadRequest(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
+    }
+
+    [Authorize(Roles = "Restaurante")]
+    [HttpPost("imagenes")]
+    public async Task<IActionResult> SubirImagenProducto(IFormFile archivo)
+    {
+        var resultado = await _imagenService.SubirImagen(archivo);
         if (!resultado.Exito)
             return BadRequest(new { mensaje = resultado.Mensaje });
         return Ok(resultado.Datos);
