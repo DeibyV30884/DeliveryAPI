@@ -6,6 +6,7 @@ using DeliveryAPI.Business.Interfaces;
 using DeliveryAPI.Business.Services;
 using DeliveryAPI.Business.Services.Interfaces;
 using DeliveryAPI.Data.Data;
+using CloudinaryDotNet;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,11 +76,24 @@ builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbConte
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IRestauranteService, RestauranteService>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IRepartidorService, RepartidorService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
 builder.Services.AddScoped<IUsuarioValidacionService, UsuarioValidacionService>();
 builder.Services.AddScoped<IAdministradorService, AdministradorService>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IPedidoService, PedidoService>();
+builder.Services.AddScoped<IImagenService, ImagenService>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
+
+var cloudinaryConfig = builder.Configuration.GetSection("Cloudinary");
+var cloudinaryAccount = new Account(
+    cloudinaryConfig["CloudName"],
+    cloudinaryConfig["ApiKey"],
+    cloudinaryConfig["ApiSecret"]
+);
+builder.Services.AddSingleton(new Cloudinary(cloudinaryAccount));
 
 var app = builder.Build();
 

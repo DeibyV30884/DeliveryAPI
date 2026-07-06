@@ -15,6 +15,7 @@ public class Restaurante
     public decimal Longitud { get; set; }
     public bool AceptaComision { get; set; } = false;
     public bool Activo { get; set; } = true;
+    public string? ImagenUrl { get; set; }
 
     public Usuario? Usuario { get; set; }
     public ICollection<HorarioRestaurante>? Horarios { get; set; }

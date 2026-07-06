@@ -1,0 +1,1105 @@
+Index: DeliveryAPI.Business/Services/Interfaces/IProductoService.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>namespace DeliveryAPI.Business.Services.Interfaces;\r\n\r\npublic interface IProductoService\r\n{\r\n    Task<ServiceResult> ObtenerProductosPorRestaurante(int restauranteId);\r\n    Task<ServiceResult> ObtenerDetalleProducto(int productoId);\r\n    Task<ServiceResult> BuscarProductos(string termino);\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/DeliveryAPI.Business/Services/Interfaces/IProductoService.cs b/DeliveryAPI.Business/Services/Interfaces/IProductoService.cs
+--- a/DeliveryAPI.Business/Services/Interfaces/IProductoService.cs	(revision e70bc0049a1e04e7ce8a07e5fc57c962f18bba36)
++++ b/DeliveryAPI.Business/Services/Interfaces/IProductoService.cs	(date 1783308234926)
+@@ -1,8 +1,13 @@
++
++using DeliveryAPI.Business.DTOs;
+ namespace DeliveryAPI.Business.Services.Interfaces;
+-
+ public interface IProductoService
+ {
+     Task<ServiceResult> ObtenerProductosPorRestaurante(int restauranteId);
+     Task<ServiceResult> ObtenerDetalleProducto(int productoId);
+     Task<ServiceResult> BuscarProductos(string termino);
++    Task<ServiceResult> ObtenerProductosGestionRestaurante(int usuarioId);
++    Task<ServiceResult> CrearProducto(int usuarioId, CrearProductoDto dto);
++    Task<ServiceResult> EditarProducto(int usuarioId, int productoId, EditarProductoDto dto);
++    Task<ServiceResult> EliminarProducto(int usuarioId, int productoId);
+ }
+\ No newline at end of file
+Index: DeliveryAPI/Controllers/ProductosController.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using DeliveryAPI.Business.Interfaces;\r\nusing Microsoft.AspNetCore.Authorization;\r\nusing Microsoft.AspNetCore.Mvc;\r\nusing Microsoft.EntityFrameworkCore;\r\n\r\nnamespace DeliveryAPI.Controllers;\r\n\r\n[ApiController]\r\n[Route(\"api/[controller]\")]\r\npublic class ProductosController : ControllerBase\r\n{\r\n    private readonly IAppDbContext _context;\r\n\r\n    public ProductosController(IAppDbContext context)\r\n    {\r\n        _context = context;\r\n    }\r\n\r\n    [HttpGet(\"restaurante/{restauranteId}\")]\r\n    [AllowAnonymous]\r\n    public async Task<IActionResult> ObtenerProductosPorRestaurante(int restauranteId)\r\n    {\r\n        var restauranteExiste = await _context.Restaurantes\r\n            .AnyAsync(r => r.RestauranteId == restauranteId && r.Activo);\r\n\r\n        if (!restauranteExiste)\r\n            return NotFound(new { mensaje = \"Restaurante no encontrado\" });\r\n\r\n        var productos = await _context.Productos\r\n            .Where(p => p.RestauranteId == restauranteId && p.Activo)\r\n            .Select(p => new\r\n            {\r\n                p.ProductoId,\r\n                p.Nombre,\r\n                p.Descripcion,\r\n                p.Precio,\r\n                p.PrecioDescuento,\r\n                p.ImagenUrl,\r\n                p.TiempoPreparacionMin\r\n            })\r\n            .ToListAsync();\r\n\r\n        return Ok(productos);\r\n    }\r\n\r\n    [HttpGet(\"{productoId}\")]\r\n    [AllowAnonymous]\r\n    public async Task<IActionResult> ObtenerProductoPorId(int productoId)\r\n    {\r\n        var producto = await _context.Productos\r\n            .Where(p => p.ProductoId == productoId && p.Activo)\r\n            .Select(p => new\r\n            {\r\n                p.ProductoId,\r\n                p.RestauranteId,\r\n                p.Nombre,\r\n                p.Descripcion,\r\n                p.Precio,\r\n                p.PrecioDescuento,\r\n                p.ImagenUrl,\r\n                p.TiempoPreparacionMin\r\n            })\r\n            .FirstOrDefaultAsync();\r\n\r\n        if (producto == null)\r\n            return NotFound(new { mensaje = \"Producto no encontrado\" });\r\n\r\n        return Ok(producto);\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/DeliveryAPI/Controllers/ProductosController.cs b/DeliveryAPI/Controllers/ProductosController.cs
+--- a/DeliveryAPI/Controllers/ProductosController.cs	(revision e70bc0049a1e04e7ce8a07e5fc57c962f18bba36)
++++ b/DeliveryAPI/Controllers/ProductosController.cs	(date 1783308114957)
+@@ -1,7 +1,8 @@
+-using DeliveryAPI.Business.Interfaces;
++using DeliveryAPI.Business.DTOs;
++using DeliveryAPI.Business.Services.Interfaces;
+ using Microsoft.AspNetCore.Authorization;
+ using Microsoft.AspNetCore.Mvc;
+-using Microsoft.EntityFrameworkCore;
++using System.Security.Claims;
+ 
+ namespace DeliveryAPI.Controllers;
+ 
+@@ -9,62 +10,101 @@
+ [Route("api/[controller]")]
+ public class ProductosController : ControllerBase
+ {
+-    private readonly IAppDbContext _context;
++    private readonly IProductoService _productoService;
++    private readonly IImagenService _imagenService;
+ 
+-    public ProductosController(IAppDbContext context)
++    public ProductosController(IProductoService productoService, IImagenService imagenService)
+     {
+-        _context = context;
++        _productoService = productoService;
++        _imagenService = imagenService;
+     }
++
++    private int ObtenerUsuarioId() =>
++        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
++
++    // --- Públicos, para el catálogo del cliente ---
+ 
+     [HttpGet("restaurante/{restauranteId}")]
+     [AllowAnonymous]
+     public async Task<IActionResult> ObtenerProductosPorRestaurante(int restauranteId)
+     {
+-        var restauranteExiste = await _context.Restaurantes
+-            .AnyAsync(r => r.RestauranteId == restauranteId && r.Activo);
+-
+-        if (!restauranteExiste)
+-            return NotFound(new { mensaje = "Restaurante no encontrado" });
+-
+-        var productos = await _context.Productos
+-            .Where(p => p.RestauranteId == restauranteId && p.Activo)
+-            .Select(p => new
+-            {
+-                p.ProductoId,
+-                p.Nombre,
+-                p.Descripcion,
+-                p.Precio,
+-                p.PrecioDescuento,
+-                p.ImagenUrl,
+-                p.TiempoPreparacionMin
+-            })
+-            .ToListAsync();
+-
+-        return Ok(productos);
++        var resultado = await _productoService.ObtenerProductosPorRestaurante(restauranteId);
++        if (!resultado.Exito)
++            return NotFound(new { mensaje = resultado.Mensaje });
++        return Ok(resultado.Datos);
+     }
+ 
+     [HttpGet("{productoId}")]
+     [AllowAnonymous]
+     public async Task<IActionResult> ObtenerProductoPorId(int productoId)
+     {
+-        var producto = await _context.Productos
+-            .Where(p => p.ProductoId == productoId && p.Activo)
+-            .Select(p => new
+-            {
+-                p.ProductoId,
+-                p.RestauranteId,
+-                p.Nombre,
+-                p.Descripcion,
+-                p.Precio,
+-                p.PrecioDescuento,
+-                p.ImagenUrl,
+-                p.TiempoPreparacionMin
+-            })
+-            .FirstOrDefaultAsync();
++        var resultado = await _productoService.ObtenerDetalleProducto(productoId);
++        if (!resultado.Exito)
++            return NotFound(new { mensaje = resultado.Mensaje });
++        return Ok(resultado.Datos);
++    }
++
++    [HttpGet("buscar")]
++    [AllowAnonymous]
++    public async Task<IActionResult> BuscarProductos([FromQuery] string termino)
++    {
++        var resultado = await _productoService.BuscarProductos(termino);
++        return Ok(resultado.Datos);
++    }
++
++    [Authorize(Roles = "Restaurante")]
++    [HttpGet("gestion")]
++    public async Task<IActionResult> ObtenerProductosGestionRestaurante()
++    {
++        var resultado = await _productoService.ObtenerProductosGestionRestaurante(ObtenerUsuarioId());
++        if (!resultado.Exito)
++            return BadRequest(new { mensaje = resultado.Mensaje });
++        return Ok(resultado.Datos);
++    }
++
++    [Authorize(Roles = "Restaurante")]
++    [HttpPost]
++    public async Task<IActionResult> CrearProducto([FromBody] CrearProductoDto dto)
++    {
++        if (!ModelState.IsValid)
++            return BadRequest(ModelState);
+ 
+-        if (producto == null)
+-            return NotFound(new { mensaje = "Producto no encontrado" });
++        var resultado = await _productoService.CrearProducto(ObtenerUsuarioId(), dto);
++        if (!resultado.Exito)
++            return BadRequest(new { mensaje = resultado.Mensaje });
++        return Ok(resultado.Datos);
++    }
+ 
+-        return Ok(producto);
++    [Authorize(Roles = "Restaurante")]
++    [HttpPut("{productoId}")]
++    public async Task<IActionResult> EditarProducto(int productoId, [FromBody] EditarProductoDto dto)
++    {
++        if (!ModelState.IsValid)
++            return BadRequest(ModelState);
++
++        var resultado = await _productoService.EditarProducto(ObtenerUsuarioId(), productoId, dto);
++        if (!resultado.Exito)
++            return BadRequest(new { mensaje = resultado.Mensaje });
++        return Ok(resultado.Datos);
++    }
++
++    [Authorize(Roles = "Restaurante")]
++    [HttpDelete("{productoId}")]
++    public async Task<IActionResult> EliminarProducto(int productoId)
++    {
++        var resultado = await _productoService.EliminarProducto(ObtenerUsuarioId(), productoId);
++        if (!resultado.Exito)
++            return BadRequest(new { mensaje = resultado.Mensaje });
++        return Ok(resultado.Datos);
++    }
++
++    [Authorize(Roles = "Restaurante")]
++    [HttpPost("imagenes")]
++    public async Task<IActionResult> SubirImagenProducto(IFormFile archivo)
++    {
++        var resultado = await _imagenService.SubirImagen(archivo);
++        if (!resultado.Exito)
++            return BadRequest(new { mensaje = resultado.Mensaje });
++        return Ok(resultado.Datos);
+     }
+ }
+\ No newline at end of file
+Index: DeliveryAPI/Program.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using Microsoft.EntityFrameworkCore;\r\nusing Microsoft.AspNetCore.Authentication.JwtBearer;\r\nusing Microsoft.IdentityModel.Tokens;\r\nusing System.Text;\r\nusing DeliveryAPI.Business.Interfaces;\r\nusing DeliveryAPI.Business.Services;\r\nusing DeliveryAPI.Business.Services.Interfaces;\r\nusing DeliveryAPI.Data.Data;\r\n\r\nvar builder = WebApplication.CreateBuilder(args);\r\n\r\nbuilder.Services.AddControllers();\r\nbuilder.Services.AddEndpointsApiExplorer();\r\n\r\nbuilder.Services.AddSwaggerGen(c =>\r\n{\r\n    c.AddSecurityDefinition(\"Bearer\", new Microsoft.OpenApi.Models.OpenApiSecurityScheme\r\n    {\r\n        Name = \"Authorization\",\r\n        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,\r\n        Scheme = \"Bearer\",\r\n        BearerFormat = \"JWT\",\r\n        In = Microsoft.OpenApi.Models.ParameterLocation.Header,\r\n        Description = \"Pega tu token aqui para probar endpoints protegidos\"\r\n    });\r\n    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement\r\n    {\r\n        {\r\n            new Microsoft.OpenApi.Models.OpenApiSecurityScheme\r\n            {\r\n                Reference = new Microsoft.OpenApi.Models.OpenApiReference\r\n                {\r\n                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,\r\n                    Id = \"Bearer\"\r\n                }\r\n            },\r\n            Array.Empty<string>()\r\n        }\r\n    });\r\n});\r\n\r\nbuilder.Services.AddDbContext<AppDbContext>(options =>\r\n{\r\n    options.UseSqlServer(\"name=DefaultConnection\");\r\n});\r\n\r\nbuilder.Services.AddCors(options =>\r\n{\r\n    options.AddPolicy(\"AllowReact\", policy =>\r\n    {\r\n        policy.AllowAnyOrigin()\r\n              .AllowAnyMethod()\r\n              .AllowAnyHeader();\r\n    });\r\n});\r\n\r\nbuilder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)\r\n    .AddJwtBearer(options =>\r\n    {\r\n        options.TokenValidationParameters = new TokenValidationParameters\r\n        {\r\n            ValidateIssuer = true,\r\n            ValidateAudience = true,\r\n            ValidateLifetime = true,\r\n            ValidateIssuerSigningKey = true,\r\n            ValidIssuer = builder.Configuration[\"Jwt:Issuer\"],\r\n            ValidAudience = builder.Configuration[\"Jwt:Audience\"],\r\n            IssuerSigningKey = new SymmetricSecurityKey(\r\n                Encoding.UTF8.GetBytes(builder.Configuration[\"Jwt:Key\"]!))\r\n        };\r\n    });\r\n\r\n// Registrar AppDbContext también como IAppDbContext\r\nbuilder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());\r\nbuilder.Services.AddScoped<IAuthService, AuthService>();\r\nbuilder.Services.AddScoped<IClienteService, ClienteService>();\r\nbuilder.Services.AddScoped<IRestauranteService, RestauranteService>();\r\nbuilder.Services.AddScoped<IRepartidorService, RepartidorService>();\r\nbuilder.Services.AddScoped<ITokenService, TokenService>();\r\nbuilder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();\r\nbuilder.Services.AddScoped<IUsuarioValidacionService, UsuarioValidacionService>();\r\nbuilder.Services.AddScoped<IAdministradorService, AdministradorService>();\r\nbuilder.Services.AddScoped<IProductoService, ProductoService>();\r\nbuilder.Services.AddScoped<IPedidoService, PedidoService>();\r\n\r\nvar app = builder.Build();\r\n\r\nif (app.Environment.IsDevelopment())\r\n{\r\n    app.UseSwagger();\r\n    app.UseSwaggerUI();\r\n}\r\n\r\napp.UseCors(\"AllowReact\");\r\napp.UseHttpsRedirection();\r\napp.UseAuthentication();\r\napp.UseAuthorization();\r\napp.MapControllers();\r\napp.Run();\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/DeliveryAPI/Program.cs b/DeliveryAPI/Program.cs
+--- a/DeliveryAPI/Program.cs	(revision e70bc0049a1e04e7ce8a07e5fc57c962f18bba36)
++++ b/DeliveryAPI/Program.cs	(date 1783291813047)
+@@ -6,6 +6,7 @@
+ using DeliveryAPI.Business.Services;
+ using DeliveryAPI.Business.Services.Interfaces;
+ using DeliveryAPI.Data.Data;
++using CloudinaryDotNet;
+ 
+ var builder = WebApplication.CreateBuilder(args);
+ 
+@@ -82,6 +83,15 @@
+ builder.Services.AddScoped<IAdministradorService, AdministradorService>();
+ builder.Services.AddScoped<IProductoService, ProductoService>();
+ builder.Services.AddScoped<IPedidoService, PedidoService>();
++builder.Services.AddScoped<IImagenService, ImagenService>();
++
++var cloudinaryConfig = builder.Configuration.GetSection("Cloudinary");
++var cloudinaryAccount = new Account(
++    cloudinaryConfig["CloudName"],
++    cloudinaryConfig["ApiKey"],
++    cloudinaryConfig["ApiSecret"]
++);
++builder.Services.AddSingleton(new Cloudinary(cloudinaryAccount));
+ 
+ var app = builder.Build();
+ 
+Index: DeliveryAPI.Business/Services/ProductoService.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using DeliveryAPI.Business.Interfaces;\r\nusing DeliveryAPI.Business.Services.Interfaces;\r\nusing Microsoft.EntityFrameworkCore;\r\n\r\nnamespace DeliveryAPI.Business.Services;\r\n\r\npublic class ProductoService : IProductoService\r\n{\r\n    private readonly IAppDbContext _context;\r\n\r\n    public ProductoService(IAppDbContext context)\r\n    {\r\n        _context = context;\r\n    }\r\n\r\n    public async Task<ServiceResult> ObtenerProductosPorRestaurante(int restauranteId)\r\n    {\r\n        var restaurante = await _context.Restaurantes\r\n            .Where(r => r.RestauranteId == restauranteId && r.Activo)\r\n            .FirstOrDefaultAsync();\r\n\r\n        if (restaurante == null)\r\n            return ServiceResult.Fallo(\"Restaurante no encontrado o inactivo\");\r\n\r\n        var productos = await _context.Productos\r\n            .Where(p => p.RestauranteId == restauranteId && p.Activo)\r\n            .Select(p => new\r\n            {\r\n                p.ProductoId,\r\n                p.Nombre,\r\n                p.Descripcion,\r\n                p.Precio,\r\n                p.PrecioDescuento,\r\n                p.TiempoPreparacionMin,\r\n                p.ImagenUrl,\r\n                TieneDescuento = p.PrecioDescuento != null\r\n            })\r\n            .ToListAsync();\r\n\r\n        return ServiceResult.Ok(new\r\n        {\r\n            restaurante.RestauranteId,\r\n            restaurante.NombreRestaurante,\r\n            restaurante.Direccion,\r\n            productos\r\n        });\r\n    }\r\n\r\n    public async Task<ServiceResult> ObtenerDetalleProducto(int productoId)\r\n    {\r\n        var producto = await _context.Productos\r\n            .Where(p => p.ProductoId == productoId && p.Activo)\r\n            .Select(p => new\r\n            {\r\n                p.ProductoId,\r\n                p.Nombre,\r\n                p.Descripcion,\r\n                p.Precio,\r\n                p.PrecioDescuento,\r\n                p.TiempoPreparacionMin,\r\n                p.ImagenUrl,\r\n                TieneDescuento = p.PrecioDescuento != null,\r\n                Restaurante = new\r\n                {\r\n                    p.Restaurante.RestauranteId,\r\n                    p.Restaurante.NombreRestaurante\r\n                }\r\n            })\r\n            .FirstOrDefaultAsync();\r\n\r\n        if (producto == null)\r\n            return ServiceResult.Fallo(\"Producto no encontrado\");\r\n\r\n        return ServiceResult.Ok(producto);\r\n    }\r\n\r\n    public async Task<ServiceResult> BuscarProductos(string termino)\r\n    {\r\n        var productos = await _context.Productos\r\n            .Where(p => p.Activo && p.Nombre.Contains(termino))\r\n            .Select(p => new\r\n            {\r\n                p.ProductoId,\r\n                p.Nombre,\r\n                p.Precio,\r\n                p.PrecioDescuento,\r\n                p.ImagenUrl,\r\n                p.Restaurante.RestauranteId,\r\n                NombreRestaurante = p.Restaurante.NombreRestaurante,\r\n                TieneDescuento = p.PrecioDescuento != null\r\n            })\r\n            .ToListAsync();\r\n\r\n        return ServiceResult.Ok(productos);\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/DeliveryAPI.Business/Services/ProductoService.cs b/DeliveryAPI.Business/Services/ProductoService.cs
+--- a/DeliveryAPI.Business/Services/ProductoService.cs	(revision e70bc0049a1e04e7ce8a07e5fc57c962f18bba36)
++++ b/DeliveryAPI.Business/Services/ProductoService.cs	(date 1783308175908)
+@@ -1,6 +1,8 @@
+ using DeliveryAPI.Business.Interfaces;
+ using DeliveryAPI.Business.Services.Interfaces;
+ using Microsoft.EntityFrameworkCore;
++using DeliveryAPI.Business.DTOs;
++using DeliveryAPI.Models.Entities;
+ 
+ namespace DeliveryAPI.Business.Services;
+ 
+@@ -93,4 +95,115 @@
+ 
+         return ServiceResult.Ok(productos);
+     }
++
++    private async Task<Restaurante?> ObtenerRestauranteDelUsuario(int usuarioId)
++    {
++        return await _context.Restaurantes
++            .FirstOrDefaultAsync(r => r.UsuarioId == usuarioId && r.Activo);
++    }
++
++    public async Task<ServiceResult> ObtenerProductosGestionRestaurante(int usuarioId)
++    {
++        var restaurante = await ObtenerRestauranteDelUsuario(usuarioId);
++        if (restaurante == null)
++            return ServiceResult.Fallo("Restaurante no encontrado o inactivo");
++
++        var productos = await _context.Productos
++            .Where(p => p.RestauranteId == restaurante.RestauranteId)
++            .Select(p => new
++            {
++                p.ProductoId,
++                p.RestauranteId,
++                p.Nombre,
++                p.Descripcion,
++                p.Precio,
++                p.PrecioDescuento,
++                p.TiempoPreparacionMin,
++                p.ImagenUrl,
++                p.Activo,
++                TieneDescuento = p.PrecioDescuento != null
++            })
++            .ToListAsync();
++
++        return ServiceResult.Ok(productos);
++    }
++
++    public async Task<ServiceResult> CrearProducto(int usuarioId, CrearProductoDto dto)
++    {
++        var restaurante = await ObtenerRestauranteDelUsuario(usuarioId);
++        if (restaurante == null)
++            return ServiceResult.Fallo("Restaurante no encontrado o inactivo");
++
++        if (dto.PrecioDescuento.HasValue && dto.PrecioDescuento >= dto.Precio)
++            return ServiceResult.Fallo("El precio con descuento tiene que ser menor al precio normal");
++
++        var producto = new Producto
++        {
++            RestauranteId = restaurante.RestauranteId,
++            Nombre = dto.Nombre,
++            Descripcion = dto.Descripcion,
++            Precio = dto.Precio,
++            PrecioDescuento = dto.PrecioDescuento,
++            TiempoPreparacionMin = dto.TiempoPreparacionMin,
++            ImagenUrl = dto.ImagenUrl,
++            Activo = dto.Activo
++        };
++
++        _context.Productos.Add(producto);
++        await _context.SaveChangesAsync();
++
++        return ServiceResult.Ok(producto);
++    }
++
++    public async Task<ServiceResult> EditarProducto(int usuarioId, int productoId, EditarProductoDto dto)
++    {
++        var restaurante = await ObtenerRestauranteDelUsuario(usuarioId);
++        if (restaurante == null)
++            return ServiceResult.Fallo("Restaurante no encontrado o inactivo");
++
++        var producto = await _context.Productos
++            .FirstOrDefaultAsync(p => p.ProductoId == productoId);
++
++        if (producto == null)
++            return ServiceResult.Fallo("Producto no encontrado");
++
++        if (producto.RestauranteId != restaurante.RestauranteId)
++            return ServiceResult.Fallo("No tienes permiso para editar este producto");
++
++        if (dto.PrecioDescuento.HasValue && dto.PrecioDescuento >= dto.Precio)
++            return ServiceResult.Fallo("El precio con descuento tiene que ser menor al precio normal");
++
++        producto.Nombre = dto.Nombre;
++        producto.Descripcion = dto.Descripcion;
++        producto.Precio = dto.Precio;
++        producto.PrecioDescuento = dto.PrecioDescuento;
++        producto.TiempoPreparacionMin = dto.TiempoPreparacionMin;
++        producto.ImagenUrl = dto.ImagenUrl;
++        producto.Activo = dto.Activo;
++
++        await _context.SaveChangesAsync();
++
++        return ServiceResult.Ok(producto);
++    }
++
++    public async Task<ServiceResult> EliminarProducto(int usuarioId, int productoId)
++    {
++        var restaurante = await ObtenerRestauranteDelUsuario(usuarioId);
++        if (restaurante == null)
++            return ServiceResult.Fallo("Restaurante no encontrado o inactivo");
++
++        var producto = await _context.Productos
++            .FirstOrDefaultAsync(p => p.ProductoId == productoId);
++
++        if (producto == null)
++            return ServiceResult.Fallo("Producto no encontrado");
++
++        if (producto.RestauranteId != restaurante.RestauranteId)
++            return ServiceResult.Fallo("No tienes permiso para eliminar este producto");
++
++        producto.Activo = false;
++        await _context.SaveChangesAsync();
++
++        return ServiceResult.Ok("Producto desactivado correctamente");
++    }
+ }
+\ No newline at end of file
+Index: frontend/src/components/TablaProductos.jsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import { useNavigate } from \"react-router-dom\";\r\n\r\nfunction TablaProductos() {\r\n    const navigate = useNavigate();\r\n\r\n    return (\r\n        <div className=\"mt-8\">\r\n            <h2 className=\"mb-4 text-lg font-semibold uppercase text-white\">\r\n                Tabla de Productos\r\n            </h2>\r\n\r\n            <div className=\"overflow-hidden rounded-2xl border border-slate-700\">\r\n                <table className=\"w-full border-collapse\">\r\n                    <thead className=\"bg-slate-100 text-slate-800\">\r\n                    <tr>\r\n                        <th className=\"px-4 py-3 text-left font-medium\">Producto</th>\r\n                        <th className=\"px-4 py-3 text-left font-medium\">Descripción</th>\r\n                        <th className=\"px-4 py-3 text-center font-medium\">Precio</th>\r\n                        <th className=\"px-4 py-3 text-center font-medium\">Precio con descuento</th>\r\n                        <th className=\"px-4 py-3 text-center font-medium\">Tiempo preparación</th>\r\n                        <th className=\"px-4 py-3 text-center font-medium\">Acciones</th>\r\n                    </tr>\r\n                    </thead>\r\n\r\n                    <tbody className=\"bg-slate-700 text-white\">\r\n                    <tr className=\"border-t border-slate-600\">\r\n                        <td className=\"px-4 py-2\">Pollo Frito</td>\r\n                        <td className=\"px-4 py-2\">Cubo de 6 porciones</td>\r\n                        <td className=\"px-4 py-2 text-center\">₡5500</td>\r\n                        <td className=\"px-4 py-2 text-center\">₡3500</td>\r\n                        <td className=\"px-4 py-2 text-center\">30 min</td>\r\n                        <td className=\"px-4 py-2\">\r\n                            <div className=\"flex justify-center gap-2\">\r\n                                <button\r\n                                    onClick={() => navigate(\"/restaurante/editarproducto/1\")}\r\n                                    className=\"rounded-full border border-white px-2 py-1 hover:bg-slate-600\"\r\n                                >\r\n                                    ✏\uFE0F\r\n                                </button>\r\n\r\n                                <button className=\"rounded-full border border-white px-2 py-1 hover:bg-red-700\">\r\n                                    \uD83D\uDDD1\uFE0F\r\n                                </button>\r\n                            </div>\r\n                        </td>\r\n                    </tr>\r\n\r\n                    <tr className=\"border-t border-slate-600\">\r\n                        <td className=\"px-4 py-2\">Papas</td>\r\n                        <td className=\"px-4 py-2\">Papas con salsa</td>\r\n                        <td className=\"px-4 py-2 text-center\">₡5500</td>\r\n                        <td className=\"px-4 py-2 text-center\">₡3500</td>\r\n                        <td className=\"px-4 py-2 text-center\">30 min</td>\r\n                        <td className=\"px-4 py-2\">\r\n                            <div className=\"flex justify-center gap-2\">\r\n                                <button\r\n                                    onClick={() => navigate(\"/restaurante/editarproducto/2\")}\r\n                                    className=\"rounded-full border border-white px-2 py-1 hover:bg-slate-600\"\r\n                                >\r\n                                    ✏\uFE0F\r\n                                </button>\r\n\r\n                                <button className=\"rounded-full border border-white px-2 py-1 hover:bg-red-700\">\r\n                                    \uD83D\uDDD1\uFE0F\r\n                                </button>\r\n                            </div>\r\n                        </td>\r\n                    </tr>\r\n\r\n                    <tr className=\"border-t border-slate-600\">\r\n                        <td className=\"px-4 py-2\">Coca Cola</td>\r\n                        <td className=\"px-4 py-2\">600 ml</td>\r\n                        <td className=\"px-4 py-2 text-center\">₡5500</td>\r\n                        <td className=\"px-4 py-2 text-center\">₡3500</td>\r\n                        <td className=\"px-4 py-2 text-center\">1 min</td>\r\n                        <td className=\"px-4 py-2\">\r\n                            <div className=\"flex justify-center gap-2\">\r\n                                <button\r\n                                    onClick={() => navigate(\"/restaurante/editarproducto/3\")}\r\n                                    className=\"rounded-full border border-white px-2 py-1 hover:bg-slate-600\"\r\n                                >\r\n                                    ✏\uFE0F\r\n                                </button>\r\n\r\n                                <button className=\"rounded-full border border-white px-2 py-1 hover:bg-red-700\">\r\n                                    \uD83D\uDDD1\uFE0F\r\n                                </button>\r\n                            </div>\r\n                        </td>\r\n                    </tr>\r\n                    </tbody>\r\n                </table>\r\n            </div>\r\n        </div>\r\n    );\r\n}\r\n\r\nexport default TablaProductos;
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/frontend/src/components/TablaProductos.jsx b/frontend/src/components/TablaProductos.jsx
+--- a/frontend/src/components/TablaProductos.jsx	(revision e70bc0049a1e04e7ce8a07e5fc57c962f18bba36)
++++ b/frontend/src/components/TablaProductos.jsx	(date 1783303487465)
+@@ -1,8 +1,19 @@
+ import { useNavigate } from "react-router-dom";
+ 
+-function TablaProductos() {
++function TablaProductos({ productos, onEliminar }) {
+     const navigate = useNavigate();
+ 
++    if (!productos || productos.length === 0) {
++        return (
++            <div className="mt-8">
++                <h2 className="mb-4 text-lg font-semibold uppercase text-white">
++                    Tabla de Productos
++                </h2>
++                <p className="text-slate-300">No hay productos para mostrar.</p>
++            </div>
++        );
++    }
++
+     return (
+         <div className="mt-8">
+             <h2 className="mb-4 text-lg font-semibold uppercase text-white">
+@@ -23,71 +34,34 @@
+                     </thead>
+ 
+                     <tbody className="bg-slate-700 text-white">
+-                    <tr className="border-t border-slate-600">
+-                        <td className="px-4 py-2">Pollo Frito</td>
+-                        <td className="px-4 py-2">Cubo de 6 porciones</td>
+-                        <td className="px-4 py-2 text-center">₡5500</td>
+-                        <td className="px-4 py-2 text-center">₡3500</td>
+-                        <td className="px-4 py-2 text-center">30 min</td>
+-                        <td className="px-4 py-2">
+-                            <div className="flex justify-center gap-2">
+-                                <button
+-                                    onClick={() => navigate("/restaurante/editarproducto/1")}
+-                                    className="rounded-full border border-white px-2 py-1 hover:bg-slate-600"
+-                                >
+-                                    ✏️
+-                                </button>
+-
+-                                <button className="rounded-full border border-white px-2 py-1 hover:bg-red-700">
+-                                    🗑️
+-                                </button>
+-                            </div>
+-                        </td>
+-                    </tr>
+-
+-                    <tr className="border-t border-slate-600">
+-                        <td className="px-4 py-2">Papas</td>
+-                        <td className="px-4 py-2">Papas con salsa</td>
+-                        <td className="px-4 py-2 text-center">₡5500</td>
+-                        <td className="px-4 py-2 text-center">₡3500</td>
+-                        <td className="px-4 py-2 text-center">30 min</td>
+-                        <td className="px-4 py-2">
+-                            <div className="flex justify-center gap-2">
+-                                <button
+-                                    onClick={() => navigate("/restaurante/editarproducto/2")}
+-                                    className="rounded-full border border-white px-2 py-1 hover:bg-slate-600"
+-                                >
+-                                    ✏️
+-                                </button>
+-
+-                                <button className="rounded-full border border-white px-2 py-1 hover:bg-red-700">
+-                                    🗑️
+-                                </button>
+-                            </div>
+-                        </td>
+-                    </tr>
++                    {productos.map((p) => (
++                        <tr key={p.productoId} className="border-t border-slate-600">
++                            <td className="px-4 py-2">{p.nombre}</td>
++                            <td className="px-4 py-2">{p.descripcion}</td>
++                            <td className="px-4 py-2 text-center">₡{p.precio}</td>
++                            <td className="px-4 py-2 text-center">
++                                {p.precioDescuento ? `₡${p.precioDescuento}` : "—"}
++                            </td>
++                            <td className="px-4 py-2 text-center">{p.tiempoPreparacionMin} min</td>
++                            <td className="px-4 py-2">
++                                <div className="flex justify-center gap-2">
++                                    <button
++                                        onClick={() => navigate(`/restaurante/editarproducto/${p.productoId}`)}
++                                        className="rounded-full border border-white px-2 py-1 hover:bg-slate-600"
++                                    >
++                                        ✏️
++                                    </button>
+ 
+-                    <tr className="border-t border-slate-600">
+-                        <td className="px-4 py-2">Coca Cola</td>
+-                        <td className="px-4 py-2">600 ml</td>
+-                        <td className="px-4 py-2 text-center">₡5500</td>
+-                        <td className="px-4 py-2 text-center">₡3500</td>
+-                        <td className="px-4 py-2 text-center">1 min</td>
+-                        <td className="px-4 py-2">
+-                            <div className="flex justify-center gap-2">
+-                                <button
+-                                    onClick={() => navigate("/restaurante/editarproducto/3")}
+-                                    className="rounded-full border border-white px-2 py-1 hover:bg-slate-600"
+-                                >
+-                                    ✏️
+-                                </button>
+-
+-                                <button className="rounded-full border border-white px-2 py-1 hover:bg-red-700">
+-                                    🗑️
+-                                </button>
+-                            </div>
+-                        </td>
+-                    </tr>
++                                    <button
++                                        onClick={() => onEliminar(p.productoId)}
++                                        className="rounded-full border border-white px-2 py-1 hover:bg-red-700"
++                                    >
++                                        🗑️
++                                    </button>
++                                </div>
++                            </td>
++                        </tr>
++                    ))}
+                     </tbody>
+                 </table>
+             </div>
+Index: frontend/src/components/BarraBusquedaProductos.jsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>function BarraBusquedaProductos() {\r\n    return (\r\n        <div className=\"mt-6 flex flex-col gap-3 md:flex-row md:items-center\">\r\n            <div className=\"flex-1\">\r\n                <input\r\n                    type=\"text\"\r\n                    placeholder=\"Buscar producto...\"\r\n                    className=\"w-full rounded-xl bg-slate-800 px-4 py-3 text-sm text-slate-100 outline-none border border-slate-700 placeholder:text-slate-400 focus:border-lime-400\"\r\n                />\r\n            </div>\r\n\r\n            <select className=\"rounded-xl bg-slate-800 px-4 py-3 text-sm text-slate-100 outline-none border border-slate-700 focus:border-lime-400\">\r\n                <option>Filtrar</option>\r\n                <option>Disponibles</option>\r\n                <option>Con descuento</option>\r\n                <option>No disponibles</option>\r\n            </select>\r\n        </div>\r\n    );\r\n}\r\n\r\nexport default BarraBusquedaProductos;
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/frontend/src/components/BarraBusquedaProductos.jsx b/frontend/src/components/BarraBusquedaProductos.jsx
+--- a/frontend/src/components/BarraBusquedaProductos.jsx	(revision e70bc0049a1e04e7ce8a07e5fc57c962f18bba36)
++++ b/frontend/src/components/BarraBusquedaProductos.jsx	(date 1783303544303)
+@@ -1,15 +1,21 @@
+-function BarraBusquedaProductos() {
++function BarraBusquedaProductos({ busqueda, onBusquedaChange, filtro, onFiltroChange }) {
+     return (
+         <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center">
+             <div className="flex-1">
+                 <input
+                     type="text"
++                    value={busqueda}
++                    onChange={(e) => onBusquedaChange(e.target.value)}
+                     placeholder="Buscar producto..."
+                     className="w-full rounded-xl bg-slate-800 px-4 py-3 text-sm text-slate-100 outline-none border border-slate-700 placeholder:text-slate-400 focus:border-lime-400"
+                 />
+             </div>
+ 
+-            <select className="rounded-xl bg-slate-800 px-4 py-3 text-sm text-slate-100 outline-none border border-slate-700 focus:border-lime-400">
++            <select
++                value={filtro}
++                onChange={(e)  => onFiltroChange(e.target.value)}
++                className="rounded-xl bg-slate-800 px-4 py-3 text-sm text-slate-100 outline-none border border-slate-700 focus:border-lime-400"
++            >
+                 <option>Filtrar</option>
+                 <option>Disponibles</option>
+                 <option>Con descuento</option>
+Index: frontend/src/components/TarjetasProductos.jsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>function TarjetasProductos() {\r\n    return (\r\n        <div className=\"mt-6 flex gap-6\">\r\n            <div className=\"w-44 rounded-2xl border border-white py-4 text-center transition hover:border-lime-400\">\r\n                <p className=\"text-sm text-white\">Disponibles</p>\r\n                <p className=\"mt-1 text-xl font-bold text-white\">45</p>\r\n            </div>\r\n\r\n            <div className=\"w-44 rounded-2xl border border-white py-4 text-center transition hover:border-lime-400\">\r\n                <p className=\"text-sm text-white\">Con Descuento</p>\r\n                <p className=\"mt-1 text-xl font-bold text-white\">15</p>\r\n            </div>\r\n        </div>\r\n    );\r\n}\r\n\r\nexport default TarjetasProductos;
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/frontend/src/components/TarjetasProductos.jsx b/frontend/src/components/TarjetasProductos.jsx
+--- a/frontend/src/components/TarjetasProductos.jsx	(revision e70bc0049a1e04e7ce8a07e5fc57c962f18bba36)
++++ b/frontend/src/components/TarjetasProductos.jsx	(date 1783303510799)
+@@ -1,14 +1,14 @@
+-function TarjetasProductos() {
++function TarjetasProductos({ disponibles, conDescuento }) {
+     return (
+         <div className="mt-6 flex gap-6">
+             <div className="w-44 rounded-2xl border border-white py-4 text-center transition hover:border-lime-400">
+                 <p className="text-sm text-white">Disponibles</p>
+-                <p className="mt-1 text-xl font-bold text-white">45</p>
++                <p className="mt-1 text-xl font-bold text-white">{disponibles}</p>
+             </div>
+ 
+             <div className="w-44 rounded-2xl border border-white py-4 text-center transition hover:border-lime-400">
+                 <p className="text-sm text-white">Con Descuento</p>
+-                <p className="mt-1 text-xl font-bold text-white">15</p>
++                <p className="mt-1 text-xl font-bold text-white">{conDescuento}</p>
+             </div>
+         </div>
+     );
+Index: frontend/src/components/PaginacionProductos.jsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>function PaginacionProductos() {\r\n    return (\r\n        <div className=\"mt-4 flex flex-col items-center gap-2 text-sm text-slate-300\">\r\n            <p>Mostrando 1-10 de 25 productos</p>\r\n\r\n            <div className=\"flex items-center gap-2\">\r\n                <button className=\"hover:text-lime-400\">{\"<\"}</button>\r\n                <button className=\"hover:text-lime-400\">1</button>\r\n                <button className=\"hover:text-lime-400\">2</button>\r\n                <button className=\"hover:text-lime-400\">3</button>\r\n                <button className=\"hover:text-lime-400\">{\">\"}</button>\r\n            </div>\r\n        </div>\r\n    );\r\n}\r\n\r\nexport default PaginacionProductos;
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/frontend/src/components/PaginacionProductos.jsx b/frontend/src/components/PaginacionProductos.jsx
+--- a/frontend/src/components/PaginacionProductos.jsx	(revision e70bc0049a1e04e7ce8a07e5fc57c962f18bba36)
++++ b/frontend/src/components/PaginacionProductos.jsx	(date 1783303602909)
+@@ -1,14 +1,71 @@
+-function PaginacionProductos() {
++function PaginacionProductos({ pagina, totalPaginas, total, onCambiarPagina }) {
++    const paginas = [];
++    for (let i = 1; i <= totalPaginas; i++) {
++        paginas.push(i);
++    }
++
++    let primerProducto = (pagina - 1) * 10 + 1;
++    let ultimoProducto = pagina * 10;
++
++    if (total === 0) {
++        primerProducto = 0;
++    }
++
++    if (ultimoProducto > total) {
++        ultimoProducto = total;
++    }
++
++    function irPaginaAnterior() {
++        if (pagina > 1) {
++            onCambiarPagina(pagina - 1);
++        }
++    }
++
++    function irPaginaSiguiente() {
++        if (pagina < totalPaginas) {
++            onCambiarPagina(pagina + 1);
++        }
++    }
++
+     return (
+         <div className="mt-4 flex flex-col items-center gap-2 text-sm text-slate-300">
+-            <p>Mostrando 1-10 de 25 productos</p>
++            <p>
++                Mostrando {primerProducto}-{ultimoProducto} de {total} productos
++            </p>
+ 
+             <div className="flex items-center gap-2">
+-                <button className="hover:text-lime-400">{"<"}</button>
+-                <button className="hover:text-lime-400">1</button>
+-                <button className="hover:text-lime-400">2</button>
+-                <button className="hover:text-lime-400">3</button>
+-                <button className="hover:text-lime-400">{">"}</button>
++                <button
++                    onClick={irPaginaAnterior}
++                    disabled={pagina === 1}
++                    className="hover:text-lime-400 disabled:opacity-30"
++                >
++                    {"<"}
++                </button>
++
++                {paginas.map((numeroPagina) => {
++                    let claseBoton = "hover:text-lime-400";
++                    if (numeroPagina === pagina) {
++                        claseBoton = "text-lime-400 font-bold";
++                    }
++
++                    return (
++                        <button
++                            key={numeroPagina}
++                            onClick={() => onCambiarPagina(numeroPagina)}
++                            className={claseBoton}
++                        >
++                            {numeroPagina}
++                        </button>
++                    );
++                })}
++
++                <button
++                    onClick={irPaginaSiguiente}
++                    disabled={pagina === totalPaginas}
++                    className="hover:text-lime-400 disabled:opacity-30"
++                >
++                    {">"}
++                </button>
+             </div>
+         </div>
+     );
+Index: frontend/src/components/FormularioProducto.jsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import { useNavigate } from \"react-router-dom\";\r\n\r\nfunction FormularioProducto({ modo = \"crear\" }) {\r\n    const navigate = useNavigate();\r\n\r\n    return (\r\n        <form className=\"mt-6 rounded-2xl bg-slate-800 p-8 shadow-lg\">\r\n            <div className=\"grid grid-cols-1 gap-8 lg:grid-cols-2\">\r\n                <div>\r\n                    <h3 className=\"mb-4 text-lg font-semibold text-lime-400\">\r\n                        Información del alimento\r\n                    </h3>\r\n\r\n                    <div className=\"space-y-4\">\r\n                        <div>\r\n                            <label className=\"mb-1 block text-sm text-slate-200\">Nombre</label>\r\n                            <input\r\n                                type=\"text\"\r\n                                placeholder=\"Ej: Pollo frito\"\r\n                                className=\"w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-lime-400\"\r\n                            />\r\n                        </div>\r\n\r\n                        <div>\r\n                            <label className=\"mb-1 block text-sm text-slate-200\">Descripción</label>\r\n                            <textarea\r\n                                rows=\"4\"\r\n                                placeholder=\"Describe el producto\"\r\n                                className=\"w-full resize-none rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-lime-400\"\r\n                            />\r\n                        </div>\r\n\r\n                        <div>\r\n                            <label className=\"mb-1 block text-sm text-slate-200\">Estado</label>\r\n                            <select className=\"w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none focus:border-lime-400\">\r\n                                <option>Disponible</option>\r\n                                <option>No disponible</option>\r\n                                <option>Con descuento</option>\r\n                            </select>\r\n                        </div>\r\n\r\n                        <div>\r\n                            <label className=\"mb-1 block text-sm text-slate-200\">Imagen</label>\r\n                            <input\r\n                                type=\"file\"\r\n                                className=\"w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-slate-200 outline-none file:mr-4 file:rounded-lg file:border-0 file:bg-lime-400 file:px-4 file:py-2 file:font-semibold file:text-slate-900 hover:file:bg-lime-300\"\r\n                            />\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n\r\n                <div>\r\n                    <h3 className=\"mb-4 text-lg font-semibold text-lime-400\">\r\n                        Disponibilidad\r\n                    </h3>\r\n\r\n                    <div className=\"space-y-4\">\r\n                        <div>\r\n                            <label className=\"mb-1 block text-sm text-slate-200\">Precio</label>\r\n                            <input\r\n                                type=\"number\"\r\n                                placeholder=\"Ej: 5500\"\r\n                                className=\"w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-lime-400\"\r\n                            />\r\n                        </div>\r\n\r\n                        <div>\r\n                            <label className=\"mb-1 block text-sm text-slate-200\">\r\n                                Precio con descuento\r\n                            </label>\r\n                            <input\r\n                                type=\"number\"\r\n                                placeholder=\"Ej: 3500\"\r\n                                className=\"w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-lime-400\"\r\n                            />\r\n                        </div>\r\n\r\n                        <div>\r\n                            <label className=\"mb-1 block text-sm text-slate-200\">\r\n                                Tiempo de preparación\r\n                            </label>\r\n                            <input\r\n                                type=\"text\"\r\n                                placeholder=\"Ej: 30 min\"\r\n                                className=\"w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-lime-400\"\r\n                            />\r\n                        </div>\r\n\r\n                        <div>\r\n                            <label className=\"mb-1 block text-sm text-slate-200\">\r\n                                URL de imagen\r\n                            </label>\r\n                            <input\r\n                                type=\"text\"\r\n                                placeholder=\"https://...\"\r\n                                className=\"w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-lime-400\"\r\n                            />\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n\r\n            <div className=\"mt-8 flex justify-end gap-4\">\r\n                <button\r\n                    type=\"button\"\r\n                    onClick={() => navigate(\"/restaurante/gestionproducto\")}\r\n                    className=\"rounded-xl border border-slate-500 px-6 py-2 text-white transition hover:bg-slate-700\"\r\n                >\r\n                    Cancelar\r\n                </button>\r\n\r\n                <button\r\n                    type=\"submit\"\r\n                    className=\"rounded-xl bg-lime-400 px-6 py-2 font-semibold text-slate-900 transition hover:bg-lime-300\"\r\n                >\r\n                    {modo === \"editar\" ? \"Guardar cambios\" : \"Confirmar\"}\r\n                </button>\r\n            </div>\r\n        </form>\r\n    );\r\n}\r\n\r\nexport default FormularioProducto;
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/frontend/src/components/FormularioProducto.jsx b/frontend/src/components/FormularioProducto.jsx
+--- a/frontend/src/components/FormularioProducto.jsx	(revision e70bc0049a1e04e7ce8a07e5fc57c962f18bba36)
++++ b/frontend/src/components/FormularioProducto.jsx	(date 1783303377653)
+@@ -1,10 +1,133 @@
+-import { useNavigate } from "react-router-dom";
++import { useState, useEffect } from 'react'
++import { useNavigate, useParams } from 'react-router-dom'
++import {
++    crearProducto,
++    editarProducto,
++    obtenerProductosGestion,
++    subirImagenProducto,
++} from '../api/productos'
++
++function FormularioProducto({ modo = 'crear' }) {
++    const navigate = useNavigate()
++    const { id } = useParams()
++
++    const [formData, setFormData] = useState({
++        nombre: '',
++        descripcion: '',
++        precio: '',
++        precioDescuento: '',
++        tiempoPreparacionMin: '',
++        imagenUrl: '',
++        activo: true,
++    })
++
++
++    const [previewUrl, setPreviewUrl] = useState('')
++    const [subiendoImagen, setSubiendoImagen] = useState(false)
++    const [guardando, setGuardando] = useState(false)
++    const [error, setError] = useState('')
++    const [cargando, setCargando] = useState(modo === 'editar')
++
++    useEffect(() => {
++        if (modo !== 'editar' || !id) return
++
++        obtenerProductosGestion()
++            .then((res) => {
++                const productos = res.data.datos || res.data
++                const producto = productos.find((p) => p.productoId === Number(id))
++
++                if (!producto) {
++                    setError('Producto no encontrado')
++                    return
++                }
++
++                setFormData({
++                    nombre: producto.nombre || '',
++                    descripcion: producto.descripcion || '',
++                    precio: producto.precio ?? '',
++                    precioDescuento: producto.precioDescuento ?? '',
++                    tiempoPreparacionMin: producto.tiempoPreparacionMin ?? '',
++                    imagenUrl: producto.imagenUrl || '',
++                    activo: producto.activo,
++                })
++                setPreviewUrl(producto.imagenUrl || '')
++            })
++            .catch(() => setError('No se pudo cargar el producto'))
++            .finally(() => setCargando(false))
++    }, [modo, id])
++
++    function handleChange(e) {
++        const { name, value } = e.target
++        setFormData((prev) => ({ ...prev, [name]: value }))
++    }
++
++    function handleEstadoChange(e) {
++        setFormData((prev) => ({ ...prev, activo: e.target.value === 'Disponible' }))
++    }
+ 
+-function FormularioProducto({ modo = "crear" }) {
+-    const navigate = useNavigate();
++    async function handleArchivoChange(e) {
++        const archivo = e.target.files[0]
++        if (!archivo) return
++
++        setPreviewUrl(URL.createObjectURL(archivo))
++        setError('')
++        setSubiendoImagen(true)
++
++        try {
++            const res = await subirImagenProducto(archivo)
++            setFormData((prev) => ({ ...prev, imagenUrl: res.data.url }))
++        } catch (err) {
++            setError(err.response?.data?.mensaje || 'No se pudo subir la imagen')
++        } finally {
++            setSubiendoImagen(false)
++        }
++    }
++
++    async function handleSubmit(e) {
++        e.preventDefault()
++        setError('')
++
++        if (subiendoImagen) {
++            setError('Espera a que termine de subir la imagen')
++            return
++        }
++
++        const payload = {
++            nombre: formData.nombre,
++            descripcion: formData.descripcion,
++            precio: Number(formData.precio),
++            precioDescuento: formData.precioDescuento ? Number(formData.precioDescuento) : null,
++            tiempoPreparacionMin: Number(formData.tiempoPreparacionMin),
++            imagenUrl: formData.imagenUrl || null,
++            activo: formData.activo,
++        }
++
++        setGuardando(true)
++
++        try {
++            if (modo === 'editar') {
++                await editarProducto(id, payload)
++            } else {
++                await crearProducto(payload)
++            }
++            navigate('/restaurante/gestionproducto')
++        } catch (err) {
++            setError(err.response?.data?.mensaje || 'Error al guardar el producto')
++        } finally {
++            setGuardando(false)
++        }
++    }
++
++    if (cargando) {
++        return <p className="mt-6 text-white">Cargando producto...</p>
++    }
+ 
+     return (
+-        <form className="mt-6 rounded-2xl bg-slate-800 p-8 shadow-lg">
++        <form onSubmit={handleSubmit} className="mt-6 rounded-2xl bg-slate-800 p-8 shadow-lg">
++            {error && (
++                <p className="mb-4 rounded-lg bg-red-100 px-4 py-2 text-sm text-red-800">{error}</p>
++            )}
++
+             <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                 <div>
+                     <h3 className="mb-4 text-lg font-semibold text-lime-400">
+@@ -16,7 +139,11 @@
+                             <label className="mb-1 block text-sm text-slate-200">Nombre</label>
+                             <input
+                                 type="text"
++                                name="nombre"
++                                value={formData.nombre}
++                                onChange={handleChange}
+                                 placeholder="Ej: Pollo frito"
++                                required
+                                 className="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-lime-400"
+                             />
+                         </div>
+@@ -24,7 +151,10 @@
+                         <div>
+                             <label className="mb-1 block text-sm text-slate-200">Descripción</label>
+                             <textarea
++                                name="descripcion"
+                                 rows="4"
++                                value={formData.descripcion}
++                                onChange={handleChange}
+                                 placeholder="Describe el producto"
+                                 className="w-full resize-none rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-lime-400"
+                             />
+@@ -32,10 +162,13 @@
+ 
+                         <div>
+                             <label className="mb-1 block text-sm text-slate-200">Estado</label>
+-                            <select className="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none focus:border-lime-400">
++                            <select
++                                value={formData.activo ? 'Disponible' : 'No disponible'}
++                                onChange={handleEstadoChange}
++                                className="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none focus:border-lime-400"
++                            >
+                                 <option>Disponible</option>
+                                 <option>No disponible</option>
+-                                <option>Con descuento</option>
+                             </select>
+                         </div>
+ 
+@@ -43,8 +176,20 @@
+                             <label className="mb-1 block text-sm text-slate-200">Imagen</label>
+                             <input
+                                 type="file"
++                                accept="image/jpeg,image/png,image/webp"
++                                onChange={handleArchivoChange}
+                                 className="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-slate-200 outline-none file:mr-4 file:rounded-lg file:border-0 file:bg-lime-400 file:px-4 file:py-2 file:font-semibold file:text-slate-900 hover:file:bg-lime-300"
+                             />
++                            {subiendoImagen && (
++                                <p className="mt-2 text-xs text-lime-300">Subiendo imagen...</p>
++                            )}
++                            {previewUrl && !subiendoImagen && (
++                                <img
++                                    src={previewUrl}
++                                    alt="Vista previa"
++                                    className="mt-3 h-32 w-32 rounded-xl object-cover"
++                                />
++                            )}
+                         </div>
+                     </div>
+                 </div>
+@@ -59,7 +204,11 @@
+                             <label className="mb-1 block text-sm text-slate-200">Precio</label>
+                             <input
+                                 type="number"
++                                name="precio"
++                                value={formData.precio}
++                                onChange={handleChange}
+                                 placeholder="Ej: 5500"
++                                required
+                                 className="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-lime-400"
+                             />
+                         </div>
+@@ -70,6 +219,9 @@
+                             </label>
+                             <input
+                                 type="number"
++                                name="precioDescuento"
++                                value={formData.precioDescuento}
++                                onChange={handleChange}
+                                 placeholder="Ej: 3500"
+                                 className="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-lime-400"
+                             />
+@@ -77,22 +229,15 @@
+ 
+                         <div>
+                             <label className="mb-1 block text-sm text-slate-200">
+-                                Tiempo de preparación
++                                Tiempo de preparacion (min)
+                             </label>
+                             <input
+-                                type="text"
+-                                placeholder="Ej: 30 min"
+-                                className="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-lime-400"
+-                            />
+-                        </div>
+-
+-                        <div>
+-                            <label className="mb-1 block text-sm text-slate-200">
+-                                URL de imagen
+-                            </label>
+-                            <input
+-                                type="text"
+-                                placeholder="https://..."
++                                type="number"
++                                name="tiempoPreparacionMin"
++                                value={formData.tiempoPreparacionMin}
++                                onChange= {handleChange}
++                                placeholder="Ej: 30"
++                                required
+                                 className="w-full rounded-xl border border-slate-600 bg-slate-700 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-lime-400"
+                             />
+                         </div>
+@@ -103,7 +248,7 @@
+             <div className="mt-8 flex justify-end gap-4">
+                 <button
+                     type="button"
+-                    onClick={() => navigate("/restaurante/gestionproducto")}
++                    onClick={() => navigate('/restaurante/gestionproducto')}
+                     className="rounded-xl border border-slate-500 px-6 py-2 text-white transition hover:bg-slate-700"
+                 >
+                     Cancelar
+@@ -111,13 +256,14 @@
+ 
+                 <button
+                     type="submit"
+-                    className="rounded-xl bg-lime-400 px-6 py-2 font-semibold text-slate-900 transition hover:bg-lime-300"
++                    disabled={guardando || subiendoImagen}
++                    className="rounded-xl bg-lime-400 px-6 py-2 font-semibold text-slate-900 transition hover:bg-lime-300 disabled:opacity-50"
+                 >
+-                    {modo === "editar" ? "Guardar cambios" : "Confirmar"}
++                    {guardando ? 'Guardando...' : modo === 'editar' ? 'Guardar cambios' : 'Confirmar'}
+                 </button>
+             </div>
+         </form>
+-    );
++    )
+ }
+ 
+-export default FormularioProducto;
+\ No newline at end of file
++export default FormularioProducto
+\ No newline at end of file
+Index: frontend/src/pages/restaurante/GestionProductos.jsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import TarjetasProductos from \"../../components//TarjetasProductos\";\r\nimport BarraBusquedaProductos from \"../../components//BarraBusquedaProductos\";\r\nimport TablaProductos from \"../../components//TablaProductos\";\r\nimport PaginacionProductos from \"../../components//PaginacionProductos\";\r\nimport { useNavigate } from \"react-router-dom\";\r\n\r\nfunction GestionProductos() {\r\n    const navigate = useNavigate();\r\n\r\n    return (\r\n        <section className=\"text-white\">\r\n            <div className=\"max-w-6xl mx-auto\">\r\n                <div className=\"mb-6 flex items-center justify-between\">\r\n                    <div>\r\n                        <h1 className=\"text-3xl font-bold text-lime-300\">\r\n                            Gestión de Productos\r\n                        </h1>\r\n\r\n                        <p className=\"mt-2 text-sm font-semibold uppercase tracking-wide text-slate-300\">\r\n                            Administra tus publicaciones\r\n                        </p>\r\n                    </div>\r\n\r\n                    <button\r\n                        onClick={() => navigate(\"/restaurante/agregarproducto\")}\r\n                        className=\"rounded-xl bg-lime-400 px-5 py-3 font-semibold text-slate-900 transition hover:bg-lime-300\"\r\n                    >\r\n                        Añadir Producto\r\n                    </button>\r\n                </div>\r\n\r\n                <TarjetasProductos />\r\n                <BarraBusquedaProductos />\r\n                <TablaProductos />\r\n                <PaginacionProductos />\r\n            </div>\r\n        </section>\r\n    );\r\n}\r\n\r\nexport default GestionProductos;
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/frontend/src/pages/restaurante/GestionProductos.jsx b/frontend/src/pages/restaurante/GestionProductos.jsx
+--- a/frontend/src/pages/restaurante/GestionProductos.jsx	(revision e70bc0049a1e04e7ce8a07e5fc57c962f18bba36)
++++ b/frontend/src/pages/restaurante/GestionProductos.jsx	(date 1783303471022)
+@@ -1,12 +1,68 @@
+-import TarjetasProductos from "../../components//TarjetasProductos";
+-import BarraBusquedaProductos from "../../components//BarraBusquedaProductos";
+-import TablaProductos from "../../components//TablaProductos";
+-import PaginacionProductos from "../../components//PaginacionProductos";
++import { useState, useEffect } from "react";
++import TarjetasProductos from "../../components/TarjetasProductos";
++import BarraBusquedaProductos from "../../components/BarraBusquedaProductos";
++import TablaProductos from "../../components/TablaProductos";
++import PaginacionProductos from "../../components/PaginacionProductos";
+ import { useNavigate } from "react-router-dom";
++import { obtenerProductosGestion, eliminarProducto } from "../../api/productos";
++
++const PRODUCTOS_POR_PAGINA = 10;
+ 
+ function GestionProductos() {
+     const navigate = useNavigate();
+ 
++    const [productos, setProductos] = useState([]);
++    const [cargando, setCargando] = useState(true);
++    const [error, setError] = useState("");
++    const [busqueda, setBusqueda] = useState("");
++    const [filtro, setFiltro] = useState("Filtrar");
++    const [pagina, setPagina] = useState(1);
++
++    useEffect(() => {
++        cargarProductos();
++    }, []);
++
++    function cargarProductos() {
++        setCargando(true);
++        obtenerProductosGestion()
++            .then((res) => {
++                const datos = res.data.datos || res.data;
++                setProductos(datos);
++            })
++            .catch(() => setError("No se pudieron cargar los productos"))
++            .finally(() => setCargando(false));
++    }
++
++    async function handleEliminar(productoId) {
++        const confirmar = confirm("¿Seguro que quieres eliminar este producto?");
++        if (!confirmar) return;
++
++        try {
++            await eliminarProducto(productoId);
++            setProductos((prev) => prev.filter((p) => p.productoId !== productoId));
++        } catch (err) {
++            setError(err.response?.data?.mensaje || "Error al eliminar el producto");
++        }
++    }
++
++    const productosFiltrados = productos.filter((p) => {
++        const coincideBusqueda = p.nombre.toLowerCase().includes(busqueda.toLowerCase());
++
++        let coincideFiltro = true;
++        if (filtro === "Disponibles") coincideFiltro = p.activo;
++        if (filtro === "No disponibles") coincideFiltro = !p.activo;
++        if (filtro === "Con descuento") coincideFiltro = p.tieneDescuento;
++
++        return coincideBusqueda && coincideFiltro;
++    });
++
++    const totalPaginas = Math.max(1, Math.ceil(productosFiltrados.length / PRODUCTOS_POR_PAGINA));
++    const inicio = (pagina - 1) * PRODUCTOS_POR_PAGINA;
++    const productosPagina = productosFiltrados.slice(inicio, inicio + PRODUCTOS_POR_PAGINA);
++
++    const totalDisponibles = productos.filter((p) => p.activo).length;
++    const totalConDescuento = productos.filter((p) => p.tieneDescuento).length;
++
+     return (
+         <section className="text-white">
+             <div className="max-w-6xl mx-auto">
+@@ -29,10 +85,32 @@
+                     </button>
+                 </div>
+ 
+-                <TarjetasProductos />
+-                <BarraBusquedaProductos />
+-                <TablaProductos />
+-                <PaginacionProductos />
++                {error && (
++                    <p className="mb-4 rounded-lg bg-red-100 px-4 py-2 text-sm text-red-800">{error}</p>
++                )}
++
++                <TarjetasProductos disponibles={totalDisponibles} conDescuento={totalConDescuento} />
++
++                <BarraBusquedaProductos
++                    busqueda={busqueda}
++                    onBusquedaChange={(valor) => { setBusqueda(valor); setPagina(1); }}
++                    filtro={filtro}
++                    onFiltroChange={(valor) => { setFiltro(valor); setPagina(1); }}
++                />
++
++                {cargando ? (
++                    <p className="mt-6 text-slate-300">Cargando productos...</p>
++                ) : (
++                    <>
++                        <TablaProductos productos={productosPagina} onEliminar={handleEliminar} />
++                        <PaginacionProductos
++                            pagina={pagina}
++                            totalPaginas={totalPaginas}
++                            total={productosFiltrados.length}
++                            onCambiarPagina={setPagina}
++                        />
++                    </>
++                )}
+             </div>
+         </section>
+     );
+Index: DeliveryAPI/DeliveryAPI.csproj
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><Project Sdk=\"Microsoft.NET.Sdk.Web\">\r\n\r\n    <PropertyGroup>\r\n        <TargetFramework>net8.0</TargetFramework>\r\n        <Nullable>enable</Nullable>\r\n        <ImplicitUsings>enable</ImplicitUsings>\r\n        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>\r\n    </PropertyGroup>\r\n\r\n    <ItemGroup>\r\n        <PackageReference Include=\"BCrypt.Net-Next\" Version=\"4.2.0\" />\r\n        <PackageReference Include=\"Microsoft.AspNetCore.Authentication.JwtBearer\" Version=\"8.0.0\" />\r\n        <PackageReference Include=\"Microsoft.EntityFrameworkCore.Design\" Version=\"8.0.0\">\r\n          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>\r\n          <PrivateAssets>all</PrivateAssets>\r\n        </PackageReference>\r\n        <PackageReference Include=\"Microsoft.EntityFrameworkCore.SqlServer\" Version=\"8.0.0\" />\r\n        <PackageReference Include=\"Microsoft.EntityFrameworkCore.Tools\" Version=\"8.0.0\">\r\n          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>\r\n          <PrivateAssets>all</PrivateAssets>\r\n        </PackageReference>\r\n        <PackageReference Include=\"Swashbuckle.AspNetCore\" Version=\"6.6.2\" />\r\n    </ItemGroup>\r\n\r\n    <ItemGroup>\r\n      <ProjectReference Include=\"..\\DeliveryAPI.Business\\DeliveryAPI.Business.csproj\" />\r\n      <ProjectReference Include=\"..\\DeliveryAPI.Data\\DeliveryAPI.Data.csproj\" />\r\n    </ItemGroup>\r\n\r\n</Project>\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/DeliveryAPI/DeliveryAPI.csproj b/DeliveryAPI/DeliveryAPI.csproj
+--- a/DeliveryAPI/DeliveryAPI.csproj	(revision e70bc0049a1e04e7ce8a07e5fc57c962f18bba36)
++++ b/DeliveryAPI/DeliveryAPI.csproj	(date 1783291495327)
+@@ -5,10 +5,12 @@
+         <Nullable>enable</Nullable>
+         <ImplicitUsings>enable</ImplicitUsings>
+         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+-    </PropertyGroup>
++      <UserSecretsId>d00256de-c549-452d-9727-42a816fe7ff3</UserSecretsId>
++  </PropertyGroup>
+ 
+     <ItemGroup>
+         <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
++        <PackageReference Include="CloudinaryDotNet" Version="1.29.2" />
+         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+Index: DeliveryAPI.Business/DeliveryAPI.Business.csproj
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><Project Sdk=\"Microsoft.NET.Sdk\">\r\n\r\n  <ItemGroup>\r\n    <ProjectReference Include=\"..\\DeliveryAPI.Models\\DeliveryAPI.Models.csproj\" />\r\n  </ItemGroup>\r\n\r\n  <ItemGroup>\r\n    <PackageReference Include=\"BCrypt.Net-Next\" Version=\"4.2.0\" />\r\n    <PackageReference Include=\"Microsoft.EntityFrameworkCore\" Version=\"8.0.0\" />\r\n    <PackageReference Include=\"Microsoft.Extensions.Configuration.Abstractions\" Version=\"10.0.9\" />\r\n    <PackageReference Include=\"Microsoft.IdentityModel.Tokens\" Version=\"8.19.1\" />\r\n    <PackageReference Include=\"System.IdentityModel.Tokens.Jwt\" Version=\"8.19.1\" />\r\n  </ItemGroup>\r\n\r\n  <PropertyGroup>\r\n    <TargetFramework>net8.0</TargetFramework>\r\n    <ImplicitUsings>enable</ImplicitUsings>\r\n    <Nullable>enable</Nullable>\r\n  </PropertyGroup>\r\n\r\n</Project>\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/DeliveryAPI.Business/DeliveryAPI.Business.csproj b/DeliveryAPI.Business/DeliveryAPI.Business.csproj
+--- a/DeliveryAPI.Business/DeliveryAPI.Business.csproj	(revision e70bc0049a1e04e7ce8a07e5fc57c962f18bba36)
++++ b/DeliveryAPI.Business/DeliveryAPI.Business.csproj	(date 1783292446945)
+@@ -6,6 +6,7 @@
+ 
+   <ItemGroup>
+     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
++    <PackageReference Include="CloudinaryDotNet" Version="1.29.2" />
+     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
+     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.9" />
+     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.19.1" />
+@@ -18,4 +19,8 @@
+     <Nullable>enable</Nullable>
+   </PropertyGroup>
+ 
+-</Project>
++  <ItemGroup>
++    <FrameworkReference Include="Microsoft.AspNetCore.App" />
++  </ItemGroup>
++
++</Project>
+\ No newline at end of file

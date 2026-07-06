@@ -13,13 +13,18 @@ public class RestauranteController : ControllerBase
 {
     private readonly IRestauranteService _restauranteService;
     private readonly IGoogleMapsService _googleMapsService;
+    private readonly IImagenService _imagenService;
 
-    public RestauranteController(IRestauranteService restauranteService, IGoogleMapsService googleMapsService)
+    public RestauranteController(
+        IRestauranteService restauranteService,
+        IGoogleMapsService googleMapsService,
+        IImagenService imagenService)
     {
         _restauranteService = restauranteService;
         _googleMapsService = googleMapsService;
+        _imagenService = imagenService;
     }
-    
+
     [HttpGet]
     [AllowAnonymous]
     public async Task<IActionResult> ObtenerRestaurantes()
@@ -42,7 +47,6 @@ public class RestauranteController : ControllerBase
         return Ok(resultado.Datos);
     }
 
-    
     [HttpPut("perfil")]
     public async Task<IActionResult> EditarPerfil(EditarRestauranteDto dto)
     {
@@ -56,6 +60,15 @@ public class RestauranteController : ControllerBase
     public async Task<IActionResult> DesactivarPerfil()
     {
         var resultado = await _restauranteService.DesactivarPerfil(ObtenerUsuarioId());
+        if (!resultado.Exito)
+            return BadRequest(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
+    }
+
+    [HttpPost("imagenes")]
+    public async Task<IActionResult> SubirImagenRestaurante(IFormFile archivo)
+    {
+        var resultado = await _imagenService.SubirImagen(archivo);
         if (!resultado.Exito)
             return BadRequest(new { mensaje = resultado.Mensaje });
         return Ok(resultado.Datos);

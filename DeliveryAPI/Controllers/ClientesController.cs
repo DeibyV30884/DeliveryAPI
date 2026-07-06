@@ -12,12 +12,13 @@ namespace DeliveryAPI.Controllers;
 public class ClientesController : ControllerBase
 {
     private readonly IClienteService _clienteService;
+    private readonly IPedidoService _pedidoService;
     private readonly IGoogleMapsService _googleMapsService;
 
-
-    public ClientesController(IClienteService clienteService, IGoogleMapsService googleMapsService)
+    public ClientesController(IClienteService clienteService, IPedidoService pedidoService, IGoogleMapsService googleMapsService)
     {
         _clienteService = clienteService;
+        _pedidoService = pedidoService;
         _googleMapsService = googleMapsService;
     }
 
@@ -41,6 +42,7 @@ public class ClientesController : ControllerBase
             return BadRequest(new { mensaje = resultado.Mensaje });
         return Ok(resultado.Datos);
     }
+
     [HttpPut("perfil/desactivar")]
     public async Task<IActionResult> DesactivarPerfil()
     {
@@ -49,7 +51,7 @@ public class ClientesController : ControllerBase
             return BadRequest(new { mensaje = resultado.Mensaje });
         return Ok(resultado.Datos);
     }
-    
+
     [HttpGet("saldo")]
     public async Task<IActionResult> ObtenerSaldo()
     {
@@ -58,14 +60,20 @@ public class ClientesController : ControllerBase
             return NotFound(new { mensaje = resultado.Mensaje });
         return Ok(resultado.Datos);
     }
-    
+
+    [HttpGet("historial")]
+    public async Task<IActionResult> ObtenerHistorial()
+    {
+        var resultado = await _pedidoService.ObtenerHistorialCliente(ObtenerUsuarioId());
+        return Ok(resultado.Datos);
+    }
+
     [HttpPost("extraer-coordenadas")]
     public IActionResult ExtraerCoordenadas([FromBody] string link)
     {
-        Console.WriteLine($"Link recibido: {link}");
         if (string.IsNullOrWhiteSpace(link))
             return BadRequest(new { mensaje = "El link está vacío" });
-    
+
         var coordenadas = _googleMapsService.ExtraerCoordenadasDeLink(link);
         if (coordenadas == null)
             return BadRequest(new { mensaje = "No se pudieron extraer coordenadas del link" });
