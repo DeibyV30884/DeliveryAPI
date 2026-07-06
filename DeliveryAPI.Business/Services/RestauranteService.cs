@@ -128,15 +128,16 @@ public class RestauranteService : IRestauranteService
     }
     
     public async Task<ServiceResult> ObtenerRestaurantesActivos()
-    {
-        var restaurantes = await _context.Restaurantes
-            .Where(r => r.Activo)
-            .Select(r => new { r.RestauranteId, r.NombreRestaurante })
-            .ToListAsync();
+{
+    var restaurantes = await _context.Restaurantes
+        .Where(r => r.Activo)
+        .Select(r => new { r.RestauranteId, r.NombreRestaurante, r.ImagenUrl })
+        .ToListAsync();
 
-        return ServiceResult.Ok(restaurantes);
-    }
-    public async Task<ServiceResult> ObtenerPerfil(int usuarioId)
+    return ServiceResult.Ok(restaurantes);
+}
+
+public async Task<ServiceResult> ObtenerPerfil(int usuarioId)
 {
     var usuario = await _context.Usuarios
         .FirstOrDefaultAsync(u => u.UsuarioId == usuarioId && u.Activo);
@@ -147,23 +148,23 @@ public class RestauranteService : IRestauranteService
         .FirstOrDefaultAsync(r => r.UsuarioId == usuarioId);
     if (restaurante == null)
         return ServiceResult.Fallo("Datos de restaurante no encontrados");
-    
+
     var horariosGuardados = await _context.HorariosRestaurante
         .Where(h => h.RestauranteId == restaurante.RestauranteId)
         .ToListAsync();
-    
-    
+
+
     var horarios = DiasValidos.Select(dia =>
     {
-        
+
         var h = horariosGuardados.FirstOrDefault(x => x.Dia == dia);
         return new
         {
-            Dia = dia, 
+            Dia = dia,
             Abierto = h != null,
             HoraApertura = h?.HoraApertura,
             HoraCierre = h?.HoraCierre
-            
+
         };
     }).ToList();
 
@@ -178,13 +179,14 @@ public class RestauranteService : IRestauranteService
         restaurante.Latitud,
         restaurante.Longitud,
         restaurante.AceptaComision,
+        restaurante.ImagenUrl,
         Horarios = horarios
     });
 }
 
 public async Task<ServiceResult> EditarPerfil(int usuarioId, EditarRestauranteDto dto)
 {
-    
+
     var usuario = await _context.Usuarios
         .FirstOrDefaultAsync(u => u.UsuarioId == usuarioId && u.Activo);
     if (usuario == null)
@@ -194,12 +196,12 @@ public async Task<ServiceResult> EditarPerfil(int usuarioId, EditarRestauranteDt
         .FirstOrDefaultAsync(r => r.UsuarioId == usuarioId);
     if (restaurante == null)
         return ServiceResult.Fallo("Datos de restaurante no encontrados");
-    
+
     var errorHorario = ValidarHorarios(dto.Horarios);
     if (errorHorario != null)
-        
+
         return ServiceResult.Fallo(errorHorario);
-    
+
     usuario.Nombre = dto.NombreRestaurante;
     usuario.Telefono = dto.Telefono;
 
@@ -217,6 +219,9 @@ public async Task<ServiceResult> EditarPerfil(int usuarioId, EditarRestauranteDt
 
     restaurante.NombreRestaurante = dto.NombreRestaurante;
     restaurante.Direccion = dto.Direccion;
+
+    if (!string.IsNullOrWhiteSpace(dto.ImagenUrl))
+        restaurante.ImagenUrl = dto.ImagenUrl;
 
     if (!string.IsNullOrWhiteSpace(dto.LinkGoogleMaps))
     {
@@ -236,17 +241,17 @@ public async Task<ServiceResult> EditarPerfil(int usuarioId, EditarRestauranteDt
     {
         _context.HorariosRestaurante.Add(new HorarioRestaurante
         {
-            
+
             RestauranteId = restaurante.RestauranteId,
             Dia = h.Dia,
             HoraApertura =  h.HoraApertura!.Value,
-            HoraCierre = h.HoraCierre!.Value 
+            HoraCierre = h.HoraCierre!.Value
         });
-        
+
     }
-    
+
     await _context.SaveChangesAsync();
-    
+
     return ServiceResult.Ok(new { mensaje = "Perfil actualizado correctamente" });
 }
 

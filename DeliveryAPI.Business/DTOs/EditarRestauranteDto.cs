@@ -22,6 +22,8 @@ public class EditarRestauranteDto
     public string Direccion { get; set; } = "";
 
     public string? LinkGoogleMaps { get; set; }
+
+    public string? ImagenUrl { get; set; }
     
     [Required(ErrorMessage = "Debe indicar el horario de operación")]
     [MinLength(1, ErrorMessage = "Debe indicar al menos un día")]

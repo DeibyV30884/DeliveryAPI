@@ -7,6 +7,7 @@ import {
     editarPerfilRestaurante,
     desactivarPerfilRestaurante,
     extraerCoordenadasRestaurante,
+    subirImagenRestaurante,
 } from '../../api/usuarios'
 import { useAuth } from '../../context/AuthContext'
 import ubicacionIcon from '../../assets/ubicacion.png'
@@ -60,7 +61,11 @@ function PerfilRestaurante() {
         nombreRestaurante: '',
         direccion: '',
         linkGoogleMaps: '',
+        imagenUrl: '',
     })
+
+    const [previewUrl, setPreviewUrl] = useState('')
+    const [subiendoImagen, setSubiendoImagen] = useState(false)
 
     const [horarios, setHorarios] = useState(
         DIAS_SEMANA.map((dia) => ({ dia, abierto: false, horaApertura: '', horaCierre: '' }))
@@ -86,7 +91,10 @@ function PerfilRestaurante() {
                     nombreRestaurante: d.nombreRestaurante || '',
                     direccion: d.direccion || '',
                     linkGoogleMaps: d.linkGoogleMaps || '',
+                    imagenUrl: d.imagenUrl || '',
                 })
+
+                setPreviewUrl(d.imagenUrl || '')
 
                 if (d.horarios) {
                     setHorarios(
@@ -137,6 +145,24 @@ function PerfilRestaurante() {
         )
     }
 
+    async function handleArchivoChange(e) {
+        const archivo = e.target.files[0]
+        if (!archivo) return
+
+        setPreviewUrl(URL.createObjectURL(archivo))
+        setError('')
+        setSubiendoImagen(true)
+
+        try {
+            const res = await subirImagenRestaurante(archivo)
+            setFormData((prev) => ({ ...prev, imagenUrl: res.data.url }))
+        } catch (err) {
+            setError(err.response?.data?.mensaje || 'No se pudo subir la imagen')
+        } finally {
+            setSubiendoImagen(false)
+        }
+    }
+
 
     async function handleUbicar() {
         if (formData.linkGoogleMaps.trim() === '') {
@@ -161,6 +187,11 @@ function PerfilRestaurante() {
         setError('')
         setExito('')
 
+        if (subiendoImagen) {
+            setError('Espera a que termine de subir la imagen')
+            return
+        }
+
         const payload = { ...formData, horarios: horarios.map((h) => ({
                 dia: h.dia,
                 abierto: h.abierto,
@@ -178,6 +209,9 @@ function PerfilRestaurante() {
 
             const res = await obtenerPerfilRestaurante()
             const d = res.data
+
+            setFormData((prev) => ({ ...prev, imagenUrl: d.imagenUrl || '' }))
+            setPreviewUrl(d.imagenUrl || '')
 
             if (d.horarios) {
                 setHorarios(
@@ -248,6 +282,27 @@ function PerfilRestaurante() {
 
                 <div className="flex flex-col gap-4">
                     <h2 className="text-white font-bold tracking-wide">INFORMACIÓN DEL NEGOCIO</h2>
+
+                    <div>
+                        <label className="text-slate-300 text-xs mb-1 block">Imagen del restaurante</label>
+                        <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            onChange={handleArchivoChange}
+                            className="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs text-slate-200 outline-none file:mr-3 file:rounded-full file:border-0 file:bg-lime-400 file:px-4 file:py-1.5 file:text-xs file:font-semibold file:text-slate-900 hover:file:bg-lime-300"
+                        />
+                        {subiendoImagen && (
+                            <p className="mt-2 text-xs text-lime-300">Subiendo imagen...</p>
+                        )}
+                        {previewUrl && !subiendoImagen && (
+                            <img
+                                src={previewUrl}
+                                alt="Vista previa"
+                                className="mt-3 h-24 w-24 rounded-xl object-cover"
+                            />
+                        )}
+                    </div>
+
                     <div>
                         <label className="text-slate-300 text-xs mb-1 block">Nombre del Restaurante</label>
                         <input name="nombreRestaurante" value={formData.nombreRestaurante} onChange={handleChange}
@@ -353,8 +408,8 @@ function PerfilRestaurante() {
                     Eliminar Perfil
                 </button>
 
-                <button onClick={handleGuardar}
-                        className="border border-white text-white rounded-full px-6 py-2 text-sm  hover:bg-white hover:text-slate-700 transition">
+                <button onClick={handleGuardar} disabled={subiendoImagen}
+                        className="border border-white text-white rounded-full px-6 py-2 text-sm  hover:bg-white hover:text-slate-700 transition disabled:opacity-50">
                     Guardar Cambios
                 </button>
 

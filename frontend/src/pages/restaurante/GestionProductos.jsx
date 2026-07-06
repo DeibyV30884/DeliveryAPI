@@ -79,7 +79,7 @@ function GestionProductos() {
         }
 
         if (filtro === "Con descuento") {
-            coincideFiltro = producto.activo && producto.tieneDescuento;
+            coincideFiltro = producto.activo && producto.precioDescuento != null;
         }
 
         if (coincideBusqueda && coincideFiltro) {
@@ -92,7 +92,7 @@ function GestionProductos() {
     const productosPagina = productosFiltrados.slice(inicio, inicio + PRODUCTOS_POR_PAGINA);
 
     const totalDisponibles = productos.filter((p) => p.activo).length;
-    const totalConDescuento = productos.filter((p) => p.tieneDescuento).length;
+    const totalConDescuento = productos.filter((p) => p.precioDescuento != null).length;
 
     return (
         <section className="text-white">

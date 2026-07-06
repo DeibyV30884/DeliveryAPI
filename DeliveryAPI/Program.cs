@@ -85,6 +85,7 @@ builder.Services.AddScoped<IAdministradorService, AdministradorService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IPedidoService, PedidoService>();
 builder.Services.AddScoped<IImagenService, ImagenService>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
 
 var cloudinaryConfig = builder.Configuration.GetSection("Cloudinary");
 var cloudinaryAccount = new Account(

@@ -74,6 +74,16 @@ export function extraerCoordenadasRestaurante(link) {
     })
 }
 
+export function subirImagenRestaurante(archivo) {
+    const formData = new FormData()
+    formData.append('archivo', archivo)
+
+    return apiClient.post('/api/Restaurante/imagenes', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    })
+}
+
+
 // Repartidor
 
 export function obtenerPerfilRepartidor() {
