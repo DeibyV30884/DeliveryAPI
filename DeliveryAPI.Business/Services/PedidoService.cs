@@ -171,27 +171,52 @@ public class PedidoService : IPedidoService
         return ServiceResult.Ok(pedido);
     }
 
-    public async Task<ServiceResult> ObtenerHistorialCliente(int clienteId)
+    public async Task<ServiceResult> ObtenerHistorialCliente(int usuarioId)
     {
+        var cliente = await _context.Clientes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c =>
+                c.UsuarioId == usuarioId &&
+                c.Activo);
+
+        if (cliente == null)
+            return ServiceResult.Fallo("Cliente no encontrado");
+
         var pedidos = await _context.Pedidos
-            .Where(p => p.ClienteId == clienteId)
+            .AsNoTracking()
+            .Where(p => p.ClienteId == cliente.ClienteId)
             .OrderByDescending(p => p.FechaPedido)
             .Select(p => new
             {
                 p.PedidoId,
                 p.Estado,
+                p.Subtotal,
+                p.CostoEnvio,
                 p.Total,
+                p.DistanciaKm,
+                p.TiempoEstimadoMin,
                 p.FechaPedido,
                 p.FechaEntrega,
                 p.DireccionEntrega,
-                NombreRestaurante = p.Restaurante.NombreRestaurante,
-                Productos = p.DetallesPedido.Select(d => new
-                {
-                    d.Producto.Nombre,
-                    d.Cantidad,
-                    d.PrecioUnitario,
-                    d.Subtotal
-                }).ToList()
+
+                NombreRestaurante = p.Restaurante != null
+                    ? p.Restaurante.NombreRestaurante
+                    : "Restaurante no disponible",
+
+                Productos = p.DetallesPedido
+                    .Select(d => new
+                    {
+                        d.ProductoId,
+
+                        Nombre = d.Producto != null
+                            ? d.Producto.Nombre
+                            : "Producto no disponible",
+
+                        d.Cantidad,
+                        d.PrecioUnitario,
+                        d.Subtotal
+                    })
+                    .ToList()
             })
             .ToListAsync();
 
