@@ -20,6 +20,8 @@ import GestionProductos from "./pages/restaurante/GestionProductos";
 import AgregarProducto from "./pages/restaurante/AgregarProducto";
 import EditarProducto from "./pages/restaurante/EditarProducto";
 import Landing from './pages/Landing'
+import HistorialCliente from './pages/cliente/HistorialCliente'
+import HistorialEstadisticas from './pages/repartidor/HistorialEstadisticas'
 
 function App() {
     return (
@@ -45,7 +47,7 @@ function App() {
                         <Route path="restaurantes/:restauranteId" element={<ProductosRestaurante />} />
                         <Route path="restaurantes/:restauranteId/productos/:productoId" element={<DetalleProducto />} />
                         <Route path="seguimiento" element={<h1 className="text-white">Seguimiento pendiente</h1>} />
-                        <Route path="historial" element={<h1 className="text-white">Historial pendiente</h1>} />
+                        <Route path="historial" element={<HistorialCliente />}/>
                     </Route>
                     <Route
                         path="/restaurante"
@@ -73,7 +75,7 @@ function App() {
                     >
                         <Route path="panelprincipal" element={<h1 className="text-white">Panel Principal pendiente</h1>} />
                         <Route path="pedidoactivo" element={<h1 className="text-white">Pedido activo pendiente</h1>} />
-                        <Route path="historialyestadisticas" element={<h1 className="text-white">Historial y estadísticas pendiente</h1>} />
+                        <Route path="historialyestadisticas" element={<HistorialEstadisticas />}/>
                         <Route path="perfil" element={<PerfilRepartidor />} />
                     </Route>
                     <Route
