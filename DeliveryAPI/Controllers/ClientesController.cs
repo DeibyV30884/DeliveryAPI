@@ -64,7 +64,12 @@ public class ClientesController : ControllerBase
     [HttpGet("historial")]
     public async Task<IActionResult> ObtenerHistorial()
     {
-        var resultado = await _pedidoService.ObtenerHistorialCliente(ObtenerUsuarioId());
+        var resultado = await _pedidoService
+            .ObtenerHistorialCliente(ObtenerUsuarioId());
+
+        if (!resultado.Exito)
+            return NotFound(new { mensaje = resultado.Mensaje });
+
         return Ok(resultado.Datos);
     }
 

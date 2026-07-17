@@ -55,4 +55,23 @@ public class RepartidoresController : ControllerBase
             return BadRequest(new { mensaje = resultado.Mensaje });
         return Ok(resultado.Datos);
     }
+    
+    [Authorize(Roles = "Repartidor")]
+    [HttpGet("historial-estadisticas")]
+    public async Task<IActionResult> ObtenerHistorialYEstadisticas(
+        [FromQuery] string? estado = null,
+        [FromQuery] DateTime? fecha = null)
+    {
+        var resultado =
+            await _repartidorService.ObtenerHistorialYEstadisticas(
+                ObtenerUsuarioId(),
+                estado,
+                fecha
+            );
+
+        if (!resultado.Exito)
+            return NotFound(new { mensaje = resultado.Mensaje });
+
+        return Ok(resultado.Datos);
+    }
 }
