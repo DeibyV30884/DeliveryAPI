@@ -22,6 +22,7 @@ import EditarProducto from "./pages/restaurante/EditarProducto";
 import Landing from './pages/Landing'
 import HistorialCliente from './pages/cliente/HistorialCliente'
 import HistorialEstadisticas from './pages/repartidor/HistorialEstadisticas'
+import GestionUsuarios from './pages/administrador/GestionUsuarios'
 
 function App() {
     return (
@@ -87,7 +88,7 @@ function App() {
                         }
                     >
                         <Route path="panelprincipal" element={<h1 className="text-white">Panel Principal pendiente</h1>} />
-                        <Route path="gestionusuarios" element={<h1 className="text-white">Gestión de Usuarios pendiente</h1>} />
+                        <Route path="gestionusuarios" element={<GestionUsuarios />}/>
                         <Route path="recargarsaldo" element={<h1 className="text-white">Recargar Saldo pendiente</h1>} />
                         <Route path="perfil" element={<PerfilAdministrador />} />
                     </Route>
