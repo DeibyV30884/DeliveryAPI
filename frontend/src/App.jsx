@@ -80,7 +80,7 @@ function App() {
                     <Route
                         path="/administrador"
                         element={
-                            <RutaProtegida rolesPermitidos={['Administrador']}>
+                            <RutaProtegida rolesPermitidos={['Admin', 'Administrador']}>
                                 <PanelAdministrador />
                             </RutaProtegida>
                         }
