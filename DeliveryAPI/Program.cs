@@ -86,6 +86,8 @@ builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IPedidoService, PedidoService>();
 builder.Services.AddScoped<IImagenService, ImagenService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
+//esta es para Servicio de Gestion de recargas de saldo 
+builder.Services.AddScoped<IRecargaSaldoService, RecargaSaldoService>();  
 
 var cloudinaryConfig = builder.Configuration.GetSection("Cloudinary");
 var cloudinaryAccount = new Account(
