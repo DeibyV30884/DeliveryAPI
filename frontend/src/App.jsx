@@ -20,6 +20,7 @@ import GestionProductos from "./pages/restaurante/GestionProductos";
 import AgregarProducto from "./pages/restaurante/AgregarProducto";
 import EditarProducto from "./pages/restaurante/EditarProducto";
 import Landing from './pages/Landing'
+import RecargarSaldo from './pages/administrador/RecargarSaldo'
 
 function App() {
     return (
@@ -86,7 +87,7 @@ function App() {
                     >
                         <Route path="panelprincipal" element={<h1 className="text-white">Panel Principal pendiente</h1>} />
                         <Route path="gestionusuarios" element={<h1 className="text-white">Gestión de Usuarios pendiente</h1>} />
-                        <Route path="recargarsaldo" element={<h1 className="text-white">Recargar Saldo pendiente</h1>} />
+                        <Route path="recargarsaldo" element={<RecargarSaldo />} />
                         <Route path="perfil" element={<PerfilAdministrador />} />
                     </Route>
 
