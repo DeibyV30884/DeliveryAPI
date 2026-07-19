@@ -161,4 +161,122 @@ public class RepartidorService : IRepartidorService
 
         return ServiceResult.Ok(new { mensaje = "Perfil desactivado correctamente" });
     }
+    
+    public async Task<ServiceResult> ObtenerHistorialYEstadisticas(
+    int usuarioId,
+    string? estado,
+    DateTime? fecha)
+{
+    var repartidor = await _context.Repartidores
+        .AsNoTracking()
+        .FirstOrDefaultAsync(r =>
+            r.UsuarioId == usuarioId &&
+            r.Activo);
+
+    if (repartidor == null)
+        return ServiceResult.Fallo("Repartidor no encontrado");
+
+    var consulta = _context.Pedidos
+        .AsNoTracking()
+        .Where(p => p.RepartidorId == repartidor.RepartidorId);
+    
+    if (!string.IsNullOrWhiteSpace(estado) &&
+        !estado.Equals("Todos", StringComparison.OrdinalIgnoreCase))
+    {
+        consulta = consulta.Where(p => p.Estado == estado);
+    }
+    
+    if (fecha.HasValue)
+    {
+        var fechaInicio = fecha.Value.Date;
+        var fechaFin = fechaInicio.AddDays(1);
+
+        consulta = consulta.Where(p =>
+            (p.FechaEntrega ?? p.FechaPedido) >= fechaInicio &&
+            (p.FechaEntrega ?? p.FechaPedido) < fechaFin);
+    }
+
+    var pedidosBase = await consulta
+        .OrderByDescending(p => p.FechaEntrega ?? p.FechaPedido)
+        .Select(p => new
+        {
+            p.PedidoId,
+            p.DistanciaKm,
+            p.DireccionEntrega,
+            p.TiempoEstimadoMin,
+            p.Estado,
+            p.CostoEnvio,
+            p.FechaPedido,
+            p.FechaEntrega,
+
+            ClienteNombre = p.Cliente != null &&
+                            p.Cliente.Usuario != null
+                ? p.Cliente.Usuario.Nombre
+                : "Cliente",
+
+            ClienteApellido = p.Cliente != null &&
+                              p.Cliente.Usuario != null
+                ? p.Cliente.Usuario.Apellido
+                : null
+        })
+        .ToListAsync();
+
+    var pedidos = pedidosBase
+        .Select(p =>
+        {
+            var tiempoRealMinutos = p.FechaEntrega.HasValue
+                ? (int)Math.Round(
+                    (p.FechaEntrega.Value - p.FechaPedido).TotalMinutes)
+                : 0;
+
+            var tiempoMinutos = tiempoRealMinutos > 0
+                ? tiempoRealMinutos
+                : p.TiempoEstimadoMin;
+
+            var entregado = p.Estado.Equals(
+                "Entregado",
+                StringComparison.OrdinalIgnoreCase);
+
+            var nombreCliente = string.IsNullOrWhiteSpace(p.ClienteApellido)
+                ? p.ClienteNombre
+                : $"{p.ClienteNombre} {p.ClienteApellido}";
+
+            return new
+            {
+                p.PedidoId,
+                Cliente = nombreCliente,
+                p.DistanciaKm,
+                Direccion = p.DireccionEntrega,
+                TiempoMinutos = tiempoMinutos,
+                p.Estado,
+                
+                Ganancia = entregado
+                    ? p.CostoEnvio
+                    : 0m,
+
+                p.FechaPedido,
+                p.FechaEntrega
+            };
+        })
+        .ToList();
+
+    var pedidosEntregados = pedidos
+        .Where(p => p.Estado.Equals(
+            "Entregado",
+            StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    var estadisticas = new
+    {
+        PedidosEntregados = pedidosEntregados.Count,
+        GananciasTotales = pedidosEntregados.Sum(p => p.Ganancia)
+    };
+
+    return ServiceResult.Ok(new
+    {
+        Pedidos = pedidos,
+        Estadisticas = estadisticas
+    });
+}
+    
 }
