@@ -115,3 +115,18 @@ export function desactivarPerfilAdministrador() {
 export function registrarAdministrador(datos) {
     return apiClient.post('/api/Administrador/registro', datos)
 }
+
+///Administrador//recargasaldos
+export function buscarClientesRecarga(termino) {
+    return apiClient.get('/api/RecargasSaldo/buscar-clientes', {
+        params: { termino }
+    })
+}
+
+export function obtenerHistorialRecargas() {
+    return apiClient.get('/api/RecargasSaldo/historial')
+}
+
+export function crearRecargaSaldo(datos) {
+    return apiClient.post('/api/RecargasSaldo', datos)
+}
