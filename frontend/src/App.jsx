@@ -20,6 +20,9 @@ import GestionProductos from "./pages/restaurante/GestionProductos";
 import AgregarProducto from "./pages/restaurante/AgregarProducto";
 import EditarProducto from "./pages/restaurante/EditarProducto";
 import Landing from './pages/Landing'
+import ConfirmarPedido from './pages/cliente/ConfirmarPedido'
+import SeguimientoPedido from './pages/cliente/SeguimientoPedido'
+import PedidosEntrantes from "./pages/restaurante/PedidosEntrantes";
 
 function App() {
     return (
@@ -44,7 +47,8 @@ function App() {
                         <Route path="restaurantes" element={<ExplorarRestaurantes />} />
                         <Route path="restaurantes/:restauranteId" element={<ProductosRestaurante />} />
                         <Route path="restaurantes/:restauranteId/productos/:productoId" element={<DetalleProducto />} />
-                        <Route path="seguimiento" element={<h1 className="text-white">Seguimiento pendiente</h1>} />
+                        <Route path="confirmar-pedido" element={<ConfirmarPedido />} />
+                        <Route path="seguimiento" element={<SeguimientoPedido />} />
                         <Route path="historial" element={<h1 className="text-white">Historial pendiente</h1>} />
                     </Route>
                     <Route
@@ -55,13 +59,13 @@ function App() {
                             </RutaProtegida>
                         }
                     >
+                        <Route index element={<Navigate to="pedidos" replace />} />
                         <Route path="perfil" element={<PerfilRestaurante />} />
-                        <Route path="gestionporducto" element={<h1 className="text-white">Explorar Restaurantes pendiente</h1>} />
                         <Route path="gestionproducto" element={<GestionProductos />} />
                         <Route path="agregarproducto" element={<AgregarProducto />} />
                         <Route path="editarproducto/:id" element={<EditarProducto />} />
                         <Route path="repartidores" element={<h1 className="text-white">Seguimiento pendiente</h1>} />
-                        <Route path="pedidos" element={<h1 className="text-white">Historial pendiente</h1>} />
+                        <Route path="pedidos" element={<PedidosEntrantes />} />
                     </Route>
                     <Route
                         path="/repartidor"

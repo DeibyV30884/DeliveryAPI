@@ -23,6 +23,9 @@ public class Pedido
     public string? NotaCliente { get; set; }
     public DateTime FechaPedido { get; set; } = DateTime.Now;
     public DateTime? FechaEntrega { get; set; }
+    public DateTime? FechaInicioEnCamino { get; set; } 
+    
+    public DateTime? FechaInicioRegreso { get; set; }
 
     // Navegación
     public Cliente? Cliente { get; set; }

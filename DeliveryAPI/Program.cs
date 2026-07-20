@@ -86,6 +86,10 @@ builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IPedidoService, PedidoService>();
 builder.Services.AddScoped<IImagenService, ImagenService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<ICalculadorCostosPedido, CalculadorCostosPedido>();
+builder.Services.AddScoped<IPedidoService, PedidoService>();
+builder.Services.AddScoped<IPedidoRestauranteService, PedidoRestauranteService>();
+builder.Services.AddScoped<IPedidoRepartidorService, PedidoRepartidorService>();
 
 var cloudinaryConfig = builder.Configuration.GetSection("Cloudinary");
 var cloudinaryAccount = new Account(
