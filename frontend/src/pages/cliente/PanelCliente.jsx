@@ -1,41 +1,48 @@
 import { Outlet } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import SidebarCliente from '../../components/SidebarCliente'
 import { useAuth } from '../../context/AuthContext'
-import { obtenerSaldoCliente } from '../../api/usuarios'
+import { SaldoProvider, useSaldo } from '../../context/SaldoContext'
 
-function PanelCliente() {
-    const { usuario } = useAuth()
-    const [saldo, setSaldo] = useState(null)
+function SaldoHeader() {
+    const { saldo, refrescarSaldo } = useSaldo()
 
     useEffect(() => {
-        obtenerSaldoCliente()
-            .then( (res) => setSaldo(res.data.saldo))
-            .catch(() => setSaldo(0))
-    }, [])
+        refrescarSaldo()
+    }, [refrescarSaldo])
 
     const saldoFormateado = saldo !== null
         ? `₡${Number(saldo).toLocaleString('es-CR')}` : 'Cargando...'
 
     return (
-        <div className="min-h-screen bg-slate-900 flex">
-            <SidebarCliente />
-            <div className="flex-1 flex flex-col">
-                <header className="bg-slate-800 px-6 py-7 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <span className="text-slate-200 text-sm">Hola, {usuario?.nombre}</span>
-                        <span className="bg-slate-700 text-lime-400 font-semibold px-4 py-1 rounded-full text-sm">
+        <span className="bg-slate-700 text-lime-400 font-semibold px-4 py-1 rounded-full text-sm whitespace-nowrap">
+            {saldoFormateado}
+        </span>
+    )
+}
 
-                            {saldoFormateado}
-                        </span>
-                    </div>
-                </header>
+function PanelCliente() {
+    const { usuario } = useAuth()
 
-                <main className="flex-1 p-6">
-                    <Outlet />
-                </main>
+    return (
+        <SaldoProvider>
+            <div className="min-h-screen bg-slate-900 flex flex-col md:flex-row">
+                <SidebarCliente />
+
+                <div className="flex-1 flex flex-col min-w-0">
+                    <header className="bg-slate-800 px-4 md:px-6 py-4 md:py-7 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                            <span className="text-slate-200 text-sm truncate">Hola, {usuario?.nombre}</span>
+                            <SaldoHeader />
+                        </div>
+                    </header>
+
+                    <main className="flex-1 p-4 md:p-6 min-w-0">
+                        <Outlet />
+                    </main>
+                </div>
             </div>
-        </div>
+        </SaldoProvider>
     )
 }
 

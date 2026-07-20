@@ -22,8 +22,8 @@ function TablaProductos({ productos, onEliminar }) {
 
             </h2>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-700">
-                <table className="w-full border-collapse">
+            <div className="overflow-x-auto rounded-2xl border border-slate-700">
+                <table className="w-full border-collapse min-w-[820px]">
                     <thead className="bg-slate-100 text-slate-800">
                     <tr>
                         <th className="px-4 py-3 text-left font-medium">Producto</th>
@@ -46,14 +46,14 @@ function TablaProductos({ productos, onEliminar }) {
 
                         return (
                             <tr key={p.productoId} className={claseFila}>
-                                <td className="px-4 py-2">{p.nombre}</td>
+                                <td className="px-4 py-2 whitespace-nowrap">{p.nombre}</td>
                                 <td className="px-4 py-2">{p.descripcion}</td>
-                                <td className="px-4 py-2 text-center">₡{p.precio}</td>
-                                <td className="px-4 py-2 text-center">
+                                <td className="px-4 py-2 text-center whitespace-nowrap">₡{p.precio}</td>
+                                <td className="px-4 py-2 text-center whitespace-nowrap">
                                     {p.precioDescuento ? `₡${p.precioDescuento}` : "—"}
                                 </td>
-                                <td className="px-4 py-2 text-center">{p.tiempoPreparacionMin} min</td>
-                                <td className="px-4 py-2 text-center">
+                                <td className="px-4 py-2 text-center whitespace-nowrap">{p.tiempoPreparacionMin} min</td>
+                                <td className="px-4 py-2 text-center whitespace-nowrap">
                                     {p.activo ? (
                                         <span className="rounded-full bg-lime-400 px-3 py-1 text-xs font-semibold text-slate-900">
                                             Disponible

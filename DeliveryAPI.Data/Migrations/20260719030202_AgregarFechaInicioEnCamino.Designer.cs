@@ -4,6 +4,7 @@ using DeliveryAPI.Data.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DeliveryAPI.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260719030202_AgregarFechaInicioEnCamino")]
+    partial class AgregarFechaInicioEnCamino
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -188,9 +191,6 @@ namespace DeliveryAPI.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("FechaInicioEnCamino")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("FechaInicioRegreso")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("FechaPedido")

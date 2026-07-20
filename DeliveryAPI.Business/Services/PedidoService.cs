@@ -9,97 +9,66 @@ namespace DeliveryAPI.Business.Services;
 public class PedidoService : IPedidoService
 {
     private readonly IAppDbContext _context;
+    private readonly ICalculadorCostosPedido _calculadorCostos;
 
-    public PedidoService(IAppDbContext context)
+    public PedidoService(IAppDbContext context, ICalculadorCostosPedido calculadorCostos)
     {
         _context = context;
+        _calculadorCostos = calculadorCostos;
     }
 
-    public async Task<ServiceResult> CrearPedido(int clienteId, CrearPedidoDto dto)
+    public async Task<ServiceResult> PrevisualizarPedido(int usuarioId, PrevisualizarPedidoDto dto)
     {
-        // Verificar que el cliente existe y está activo
-        var cliente = await _context.Clientes
-            .FirstOrDefaultAsync(c => c.ClienteId == clienteId && c.Activo);
+        var cliente = await ObtenerClienteActivo(usuarioId);
         if (cliente == null)
             return ServiceResult.Fallo("Cliente no encontrado");
 
-        // Verificar que el restaurante existe y está activo
-        var restaurante = await _context.Restaurantes
-            .FirstOrDefaultAsync(r => r.RestauranteId == dto.RestauranteId && r.Activo);
-        if (restaurante == null)
-            return ServiceResult.Fallo("Restaurante no encontrado o inactivo");
+        var (error, restaurante, productos) = await ValidarRestauranteYProductos(dto.RestauranteId, dto.Productos);
+        if (error != null) return error;
 
-        // Verificar que los productos existen y pertenecen al restaurante
-        if (!dto.Productos.Any())
-            return ServiceResult.Fallo("El pedido debe tener al menos un producto");
+        var calculo = _calculadorCostos.Calcular(restaurante!, productos!, dto.Productos, dto.LatitudEntrega, dto.LongitudEntrega);
 
-        var productosIds = dto.Productos.Select(p => p.ProductoId).ToList();
-        var productos = await _context.Productos
-            .Where(p => productosIds.Contains(p.ProductoId) && p.Activo && p.RestauranteId == dto.RestauranteId)
-            .ToListAsync();
-
-        if (productos.Count != dto.Productos.Count)
-            return ServiceResult.Fallo("Uno o más productos no son válidos para este restaurante");
-
-        // Calcular subtotal
-        decimal subtotal = 0;
-        int tiempoPreparacion = 0;
-        var detalles = new List<DetallePedido>();
-
-        foreach (var item in dto.Productos)
+        return ServiceResult.Ok(new
         {
-            var producto = productos.First(p => p.ProductoId == item.ProductoId);
-            decimal precioFinal = producto.PrecioDescuento ?? producto.Precio;
-            decimal subtotalLinea = precioFinal * item.Cantidad;
-            subtotal += subtotalLinea;
+            calculo.Subtotal,
+            calculo.CostoEnvio,
+            calculo.Total,
+            calculo.DistanciaKm,
+            calculo.TiempoEstimadoMin,
+            SaldoDisponible = cliente.Saldo,
+            SaldoSuficiente = cliente.Saldo >= calculo.Total
+        });
+    }
 
-            if (producto.TiempoPreparacionMin > tiempoPreparacion)
-                tiempoPreparacion = producto.TiempoPreparacionMin;
+    public async Task<ServiceResult> CrearPedido(int usuarioId, CrearPedidoDto dto)
+    {
+        var cliente = await ObtenerClienteActivo(usuarioId);
+        if (cliente == null)
+            return ServiceResult.Fallo("Cliente no encontrado");
 
-            detalles.Add(new DetallePedido
-            {
-                ProductoId = item.ProductoId,
-                Cantidad = item.Cantidad,
-                PrecioUnitario = precioFinal,
-                Subtotal = subtotalLinea
-            });
-        }
+        var (error, restaurante, productos) = await ValidarRestauranteYProductos(dto.RestauranteId, dto.Productos);
+        if (error != null) return error;
 
-        // Calcular distancia con fórmula Haversine
-        decimal distanciaKm = CalcularDistanciaHaversine(
-            (double)restaurante.Latitud, (double)restaurante.Longitud,
-            (double)dto.LatitudEntrega, (double)dto.LongitudEntrega);
+        var calculo = _calculadorCostos.Calcular(restaurante!, productos!, dto.Productos, dto.LatitudEntrega, dto.LongitudEntrega);
 
-        // Calcular costos
-        decimal costoEnvio = distanciaKm * 700;
-        decimal comision = subtotal * 0.05m;
-        decimal total = subtotal + costoEnvio;
-        int tiempoViaje = (int)((double)distanciaKm / 35 * 60);
-        int tiempoEstimado = tiempoPreparacion + tiempoViaje;
+        if (cliente.Saldo < calculo.Total)
+            return ServiceResult.Fallo($"Saldo insuficiente. Saldo disponible: ₡{cliente.Saldo:N0}, Total del pedido: ₡{calculo.Total:N0}");
 
-        // Verificar saldo suficiente
-        if (cliente.Saldo < total)
-            return ServiceResult.Fallo($"Saldo insuficiente. Saldo disponible: ₡{cliente.Saldo:N0}, Total del pedido: ₡{total:N0}");
-
-        // Generar código de confirmación
-        string codigo = new Random().Next(100000, 999999).ToString();
-
-        // Crear el pedido
         var pedido = new Pedido
         {
-            ClienteId = clienteId,
+            ClienteId = cliente.ClienteId,
             RestauranteId = dto.RestauranteId,
             DireccionEntrega = dto.DireccionEntrega,
             LatitudEntrega = dto.LatitudEntrega,
             LongitudEntrega = dto.LongitudEntrega,
             Estado = "Pendiente",
-            CodigoConfirmacion = codigo,
-            Subtotal = subtotal,
-            ComisionPlataforma = comision,
-            CostoEnvio = costoEnvio,
-            Total = total,
-            DistanciaKm = distanciaKm,
-            TiempoEstimadoMin = tiempoEstimado,
+            CodigoConfirmacion = new Random().Next(100000, 999999).ToString(),
+            Subtotal = calculo.Subtotal,
+            ComisionPlataforma = calculo.ComisionPlataforma,
+            CostoEnvio = calculo.CostoEnvio,
+            Total = calculo.Total,
+            DistanciaKm = calculo.DistanciaKm,
+            TiempoEstimadoMin = calculo.TiempoEstimadoMin,
             NotaCliente = dto.NotaCliente,
             FechaPedido = DateTime.Now
         };
@@ -107,15 +76,13 @@ public class PedidoService : IPedidoService
         _context.Pedidos.Add(pedido);
         await _context.SaveChangesAsync();
 
-        // Guardar detalles
-        foreach (var detalle in detalles)
+        foreach (var detalle in calculo.Detalles)
         {
             detalle.PedidoId = pedido.PedidoId;
             _context.DetallesPedido.Add(detalle);
         }
 
-        // Descontar saldo al cliente
-        cliente.Saldo -= total;
+        cliente.Saldo -= calculo.Total;
         await _context.SaveChangesAsync();
 
         return ServiceResult.Ok(new
@@ -133,48 +100,106 @@ public class PedidoService : IPedidoService
         });
     }
 
-    public async Task<ServiceResult> ObtenerSeguimientoPedido(int pedidoId, int clienteId)
+    public async Task<ServiceResult> ObtenerSeguimientoPedido(int pedidoId, int usuarioId)
     {
+        var cliente = await ObtenerClienteActivo(usuarioId);
+        if (cliente == null)
+            return ServiceResult.Fallo("Cliente no encontrado");
+
         var pedido = await _context.Pedidos
-            .Where(p => p.PedidoId == pedidoId && p.ClienteId == clienteId)
-            .Select(p => new
-            {
-                p.PedidoId,
-                p.Estado,
-                p.CodigoConfirmacion,
-                p.TiempoEstimadoMin,
-                p.FechaPedido,
-                p.FechaEntrega,
-                p.DireccionEntrega,
-                p.LatitudEntrega,
-                p.LongitudEntrega,
-                p.Total,
-                Restaurante = new
-                {
-                    p.Restaurante.RestauranteId,
-                    p.Restaurante.NombreRestaurante,
-                    p.Restaurante.Latitud,
-                    p.Restaurante.Longitud
-                },
-                Repartidor = p.Repartidor == null ? null : new
-                {
-                    p.Repartidor.RepartidorId,
-                    p.Repartidor.LatitudActual,
-                    p.Repartidor.LongitudActual
-                }
-            })
-            .FirstOrDefaultAsync();
+            .Include(p => p.Restaurante)
+            .Include(p => p.Repartidor)
+            .FirstOrDefaultAsync(p => p.PedidoId == pedidoId && p.ClienteId == cliente.ClienteId);
 
         if (pedido == null)
             return ServiceResult.Fallo("Pedido no encontrado");
 
-        return ServiceResult.Ok(pedido);
+        object? repartidorInfo = null;
+
+        if (pedido.Repartidor != null)
+        {
+            // Valores por defecto: si todavía no está "EnCamino", no simulamos movimiento
+            double latActual = (double)pedido.Restaurante!.Latitud;
+            double lngActual = (double)pedido.Restaurante.Longitud;
+            double tiempoRestanteMin = pedido.TiempoEstimadoMin;
+            double fraccion = 0;
+            bool yaLlego = false;
+
+            if (pedido.Estado == "EnCamino" && pedido.FechaInicioEnCamino.HasValue)
+            {
+                var minutosTranscurridos = (DateTime.Now - pedido.FechaInicioEnCamino.Value).TotalMinutes;
+                var distanciaRecorridaKm = 35.0 * (minutosTranscurridos / 60.0);
+
+                // Duración real del viaje a 35 km/h — no usamos el TiempoEstimadoMin original,
+                // porque ese incluye tiempo de preparación del restaurante y no coincide con
+                // la velocidad fija que usa la simulación del mapa.
+                double duracionViajeMin = 0;
+                if (pedido.DistanciaKm > 0)
+                    duracionViajeMin = (double)pedido.DistanciaKm / 35.0 * 60.0;
+
+                if (pedido.DistanciaKm > 0)
+                    fraccion = distanciaRecorridaKm / (double)pedido.DistanciaKm;
+                if (fraccion > 1) fraccion = 1;
+                if (fraccion < 0) fraccion = 0;
+
+                var latOrigen = (double)pedido.Restaurante.Latitud;
+                var lngOrigen = (double)pedido.Restaurante.Longitud;
+                var latDestino = (double)pedido.LatitudEntrega;
+                var lngDestino = (double)pedido.LongitudEntrega;
+
+                latActual = latOrigen + fraccion * (latDestino - latOrigen);
+                lngActual = lngOrigen + fraccion * (lngDestino - lngOrigen);
+
+                // Se descuenta contra la duración real del viaje, no contra el estimado original
+                tiempoRestanteMin = duracionViajeMin - minutosTranscurridos;
+                if (tiempoRestanteMin < 0) tiempoRestanteMin = 0;
+
+                yaLlego = fraccion >= 1;
+            }
+
+            repartidorInfo = new
+            {
+                pedido.Repartidor.RepartidorId,
+                LatitudActual = latActual,
+                LongitudActual = lngActual,
+                TiempoRestanteMin = Math.Round(tiempoRestanteMin),
+                Fraccion = fraccion,
+                YaLlego = yaLlego
+            };
+        }
+
+        return ServiceResult.Ok(new
+        {
+            pedido.PedidoId,
+            pedido.Estado,
+            pedido.CodigoConfirmacion,
+            pedido.DistanciaKm,
+            pedido.TiempoEstimadoMin,
+            pedido.FechaPedido,
+            pedido.FechaEntrega,
+            pedido.DireccionEntrega,
+            pedido.LatitudEntrega,
+            pedido.LongitudEntrega,
+            pedido.Total,
+            Restaurante = pedido.Restaurante == null ? null : new
+            {
+                pedido.Restaurante.RestauranteId,
+                pedido.Restaurante.NombreRestaurante,
+                pedido.Restaurante.Latitud,
+                pedido.Restaurante.Longitud
+            },
+            Repartidor = repartidorInfo
+        });
     }
 
-    public async Task<ServiceResult> ObtenerHistorialCliente(int clienteId)
+    public async Task<ServiceResult> ObtenerHistorialCliente(int usuarioId)
     {
+        var cliente = await ObtenerClienteActivo(usuarioId);
+        if (cliente == null)
+            return ServiceResult.Fallo("Cliente no encontrado");
+
         var pedidos = await _context.Pedidos
-            .Where(p => p.ClienteId == clienteId)
+            .Where(p => p.ClienteId == cliente.ClienteId)
             .OrderByDescending(p => p.FechaPedido)
             .Select(p => new
             {
@@ -184,29 +209,35 @@ public class PedidoService : IPedidoService
                 p.FechaPedido,
                 p.FechaEntrega,
                 p.DireccionEntrega,
-                NombreRestaurante = p.Restaurante.NombreRestaurante,
-                Productos = p.DetallesPedido.Select(d => new
-                {
-                    d.Producto.Nombre,
-                    d.Cantidad,
-                    d.PrecioUnitario,
-                    d.Subtotal
-                }).ToList()
+                NombreRestaurante = p.Restaurante!.NombreRestaurante,
+                Productos = p.DetallesPedido.Select(d => new { d.Producto!.Nombre, d.Cantidad, d.PrecioUnitario, d.Subtotal })
             })
             .ToListAsync();
 
         return ServiceResult.Ok(pedidos);
     }
 
-    private decimal CalcularDistanciaHaversine(double lat1, double lon1, double lat2, double lon2)
+    private async Task<Cliente?> ObtenerClienteActivo(int usuarioId) =>
+        await _context.Clientes.FirstOrDefaultAsync(c => c.UsuarioId == usuarioId && c.Activo);
+
+    private async Task<(ServiceResult? error, Restaurante? restaurante, List<Producto>? productos)> ValidarRestauranteYProductos(
+        int restauranteId, List<DetallePedidoDto> itemsSolicitados)
     {
-        const double R = 6371;
-        double dLat = (lat2 - lat1) * Math.PI / 180;
-        double dLon = (lon2 - lon1) * Math.PI / 180;
-        double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-                   Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180) *
-                   Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
-        double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-        return (decimal)(R * c);
+        var restaurante = await _context.Restaurantes.FirstOrDefaultAsync(r => r.RestauranteId == restauranteId && r.Activo);
+        if (restaurante == null)
+            return (ServiceResult.Fallo("Restaurante no encontrado o inactivo"), null, null);
+
+        if (!itemsSolicitados.Any())
+            return (ServiceResult.Fallo("El pedido debe tener al menos un producto"), null, null);
+
+        var idsProductos = itemsSolicitados.Select(p => p.ProductoId).Distinct().ToList();
+        var productos = await _context.Productos
+            .Where(p => idsProductos.Contains(p.ProductoId) && p.Activo && p.RestauranteId == restauranteId)
+            .ToListAsync();
+
+        if (productos.Count != idsProductos.Count)
+            return (ServiceResult.Fallo("Uno o más productos no son válidos para este restaurante"), null, null);
+
+        return (null, restaurante, productos);
     }
 }
