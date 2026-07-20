@@ -271,16 +271,16 @@ function PerfilRestaurante() {
     }
 
     return (
-        <div className="bg-slate-700 rounded-2xl p-6 w-full">
-            <h1 className="text-4xl font-bold text-lime-400 mb-6">MI PERFIL</h1>
+        <div className="bg-slate-700 rounded-2xl p-4 sm:p-6 w-full max-w-full overflow-x-hidden">
+            <h1 className="text-2xl sm:text-4xl font-bold text-lime-400 mb-6">MI PERFIL</h1>
 
             {error && <p className="bg-red-100 text-red-800 rounded-lg px-4 py-2 text-sm mb-4">{error}</p>}
             {exito && <p className="bg-green-100 text-green-800 rounded-lg px-4 py-2 text-sm mb-4">{exito}</p>}
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Columna izquierda */}
 
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 min-w-0">
                     <h2 className="text-white font-bold tracking-wide">INFORMACIÓN DEL NEGOCIO</h2>
 
                     <div>
@@ -333,9 +333,9 @@ function PerfilRestaurante() {
                     </div>
 
                     <h2 className="text-white font-bold tracking-wide mt-2">HORARIO DE OPERACIÓN</h2>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-3">
                         {horarios.map((h) => (
-                            <div key={h.dia} className="flex items-center gap-3 text-white text-sm">
+                            <div key={h.dia} className="flex flex-wrap items-center gap-2 sm:gap-3 text-white text-sm">
                                 <span className="w-20 shrink-0">{h.dia}:</span>
                                 <Toggle checked={h.abierto} onChange={() => handleToggleDia(h.dia)} />
                                 <span className="w-14 shrink-0">{h.abierto ? 'Abierto' : 'Cerrado'}</span>
@@ -360,7 +360,7 @@ function PerfilRestaurante() {
                 </div>
 
                 {/* Columna derecha — mapa  */}
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 min-w-0">
                     <h2 className="text-white font-bold tracking-wide">UBICACIÓN</h2>
                     <div>
                         <label className="text-slate-300 text-xs mb-1 block">Dirección</label>
@@ -379,7 +379,7 @@ function PerfilRestaurante() {
                         Ubicar
                     </button>
 
-                    <div className="rounded-xl overflow-hidden h-52 w-full">
+                    <div className="relative isolate rounded-xl overflow-hidden h-52 w-full">
                         <MapContainer
                             center={centroMapa}
                             zoom={zoomMapa}
@@ -402,14 +402,14 @@ function PerfilRestaurante() {
 
             </div>
 
-            <div className="flex justify-between mt-6">
+            <div className="flex flex-col sm:flex-row justify-between gap-3 mt-6">
                 <button onClick={handleEliminar}
-                        className="border border-white text-white rounded-full px-6  py-2 text-sm hover:bg-red-600 hover:border-red-600 transition">
+                        className="border border-white text-white rounded-full px-6 py-2 text-sm hover:bg-red-600 hover:border-red-600 transition">
                     Eliminar Perfil
                 </button>
 
                 <button onClick={handleGuardar} disabled={subiendoImagen}
-                        className="border border-white text-white rounded-full px-6 py-2 text-sm  hover:bg-white hover:text-slate-700 transition disabled:opacity-50">
+                        className="border border-white text-white rounded-full px-6 py-2 text-sm hover:bg-white hover:text-slate-700 transition disabled:opacity-50">
                     Guardar Cambios
                 </button>
 

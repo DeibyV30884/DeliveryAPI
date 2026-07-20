@@ -6,7 +6,7 @@ function PanelAdministrador() {
     const { usuario } = useAuth()
 
     return (
-        <div className="min-h-screen bg-slate-900 flex">
+        <div className="min-h-screen bg-slate-900 flex flex-col md:flex-row">
             <SidebarAdministrador/>
             <div className="flex-1 flex flex-col">
                 <header className="bg-slate-800 px-6 py-7 flex items-center justify-between">

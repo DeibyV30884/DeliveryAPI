@@ -119,17 +119,17 @@ function PerfilAdministrador() {
     }
 
     return (
-        <div className="bg-slate-700 rounded-2xl p-6 w-full">
-            <h1 className="text-4xl font-bold text-lime-400 mb-6">MI PERFIL</h1>
+        <div className="bg-slate-700 rounded-2xl p-4 sm:p-6 w-full max-w-full overflow-x-hidden">
+            <h1 className="text-2xl sm:text-4xl font-bold text-lime-400 mb-6">MI PERFIL</h1>
 
             {error && <p className="bg-red-100 text-red-800 rounded-lg px-4 py-2 text-sm mb-4">{error}</p>}
             {exito && <p className="bg-green-100 text-green-800 rounded-lg px-4 py-2 text-sm mb-4">{exito}</p>}
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Columna izquierda */}
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 min-w-0">
                     <h2 className="text-white font-bold tracking-wide">INFORMACIÓN PERSONAL</h2>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label className="text-slate-300 text-xs mb-1 block">Nombre</label>
                             <input name="nombre" value={formData.nombre} onChange={handleChange}
@@ -149,7 +149,7 @@ function PerfilAdministrador() {
                 </div>
 
                 {/* Columna derecha */}
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 min-w-0">
                     <h2 className="text-white font-bold tracking-wide">DATOS DE ACCESO</h2>
                     <div>
                         <label className="text-slate-300 text-xs mb-1 block">Correo Electrónico</label>
@@ -165,7 +165,7 @@ function PerfilAdministrador() {
                 </div>
             </div>
 
-            <div className="flex justify-between mt-6">
+            <div className="flex flex-col sm:flex-row justify-between gap-3 mt-6">
                 <button onClick={handleEliminar}
                         className="border border-white text-white rounded-full px-6 py-2 text-sm hover:bg-red-600 hover:border-red-600 transition">
                     Eliminar Perfil
