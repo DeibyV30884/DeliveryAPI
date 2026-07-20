@@ -19,4 +19,6 @@ public interface IAdministradorService
     Task<ServiceResult> ObtenerResumenUsuarios();
 
     Task<ServiceResult> CambiarEstadoUsuario(int usuarioId);
+    
+    Task<ServiceResult> ObtenerEstadisticasDashboard();
 }

@@ -13,6 +13,7 @@ import PanelRepartidor from './pages/repartidor/PanelRepartidor'
 import PerfilRepartidor from './pages/repartidor/PerfilRepartidor'
 import PanelAdministrador from './pages/administrador/PanelAdministrador'
 import PerfilAdministrador from './pages/administrador/PerfilAdministrador'
+import Dashboard from './pages/administrador/Dashboard'
 import ExplorarRestaurantes from './pages/cliente/ExplorarRestaurantes'
 import ProductosRestaurante from './pages/cliente/ProductosRestaurante'
 import DetalleProducto from './pages/cliente/DetalleProducto'
@@ -148,14 +149,7 @@ function App() {
                             </RutaProtegida>
                         }
                     >
-                        <Route
-                            path="panelprincipal"
-                            element={
-                                <h1 className="text-white">
-                                    Panel Principal pendiente
-                                </h1>
-                            }
-                        />
+                        <Route path="panelprincipal" element={<Dashboard />} />
                         <Route
                             path="gestionusuarios"
                             element={<GestionUsuarios />}
