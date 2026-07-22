@@ -285,7 +285,7 @@ function PerfilCliente() {
                     </button>
 
                     {/* aqui va el mapa, le pongo una altura fija porque si no, no se ve */}
-                    <div className="rounded-xl overflow-hidden h-52 w-full">
+                    <div className="relative isolate rounded-xl overflow-hidden h-52 w-full">
                         <MapContainer
                             center={centroMapa}
                             zoom={zoomMapa}

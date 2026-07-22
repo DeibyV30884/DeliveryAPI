@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { obtenerProductoPorId } from '../../api/usuarios'
 
 const IMAGEN_POR_DEFECTO = '/productos/default.jpg'
@@ -7,10 +7,12 @@ const IMAGEN_POR_DEFECTO = '/productos/default.jpg'
 function DetalleProducto() {
     const { productoId, restauranteId } = useParams()
     const location = useLocation()
+    const navigate = useNavigate()
 
     const nombreRestaurante = location.state?.nombreRestaurante ?? 'Restaurante'
 
     const [producto, setProducto] = useState(null)
+    const [cantidad, setCantidad] = useState(1)
     const [cargando, setCargando] = useState(true)
     const [error, setError] = useState('')
 
@@ -30,6 +32,20 @@ function DetalleProducto() {
 
     if (error || !producto) {
         return <p className="text-red-400">{error || 'Producto no encontrado.'}</p>
+    }
+
+    const precioFinal = producto.precioDescuento ?? producto.precio
+    const subtotal = precioFinal * cantidad
+
+    function handleComprar() {
+        navigate('/cliente/confirmar-pedido', {
+            state: {
+                producto,
+                cantidad,
+                restauranteId,
+                nombreRestaurante,
+            },
+        })
     }
 
     return (
@@ -101,12 +117,29 @@ function DetalleProducto() {
                         </div>
                     )}
 
+                    <div>
+                        <label className="text-slate-300 text-sm">Cantidad</label>
+                        <input
+                            type="number"
+                            min={1}
+                            value={cantidad}
+                            onChange={(e) => setCantidad(Math.max(1, Number(e.target.value)))}
+                            className="bg-white rounded px-3 py-2 w-24"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-slate-300 text-sm">Sub Total</label>
+                        <div className="bg-white rounded px-3 py-2 font-bold">
+                            {formatoPrecio(subtotal)}
+                        </div>
+                    </div>
+
                     <button
-                        disabled
-                        title="Próximamente"
-                        className="mt-4 self-end bg-slate-500 text-slate-300 font-bold px-8 py-3 rounded-full cursor-not-allowed"
+                        onClick={handleComprar}
+                        className="mt-4 self-end bg-lime-500 hover:bg-lime-400 text-slate-900 font-bold px-8 py-3 rounded-full"
                     >
-                        Agregar al carrito
+                        Comprar
                     </button>
                 </div>
             </div>

@@ -55,6 +55,25 @@ export function extraerCoordenadas(link) {
     })
 }
 
+// Ciente Pedidos
+
+export function previsualizarPedido(datos) {
+    return apiClient.post('/api/Pedidos/preview', datos)
+}
+
+export function crearPedido(datos) {
+    return apiClient.post('/api/Pedidos', datos)
+}
+
+export function obtenerSeguimientoPedido(pedidoId) {
+    return apiClient.get(`/api/Pedidos/${pedidoId}/seguimiento`)
+}
+
+export function obtenerHistorialPedidos() {
+    return apiClient.get('/api/Pedidos/historial')
+}
+
+
 // Restaurante
 export function obtenerPerfilRestaurante() {
     return apiClient.get('/api/Restaurante/perfil')
@@ -83,6 +102,31 @@ export function subirImagenRestaurante(archivo) {
     })
 }
 
+// Restaurante - Pedidos
+
+export function obtenerPedidosPendientesRestaurante() {
+    return apiClient.get('/api/Pedidos/restaurante/pendientes')
+}
+
+export function obtenerPedidosActivosRestaurante() {
+    return apiClient.get('/api/Pedidos/restaurante/activos')
+}
+
+export function obtenerRepartidoresDisponibles() {
+    return apiClient.get('/api/Pedidos/restaurante/repartidores-disponibles')
+}
+
+export function asignarRepartidorPedido(pedidoId, repartidorId) {
+    return apiClient.post(`/api/Pedidos/restaurante/${pedidoId}/asignar/${repartidorId}`)
+}
+
+export function obtenerPedidosAceptadosRestaurante() {
+    return apiClient.get('/api/Pedidos/restaurante/aceptados')
+}
+
+export function aceptarPedidoRestaurante(pedidoId) {
+    return apiClient.post(`/api/Pedidos/restaurante/${pedidoId}/aceptar`)
+}
 
 // Repartidor
 
