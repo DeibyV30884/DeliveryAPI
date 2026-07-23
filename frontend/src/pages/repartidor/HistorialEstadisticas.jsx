@@ -3,9 +3,12 @@ import {
     CalendarDays,
     PackageCheck,
     RefreshCw,
+    RotateCcw,
     Wallet,
 } from 'lucide-react'
 import { obtenerHistorialEstadisticasRepartidor } from '../../api/repartidores'
+import MapaUbicacionModal from '../../components/MapaUbicacionModal'
+import PaginacionProductos from '../../components/PaginacionProductos'
 
 const ESTADOS = [
     { valor: 'Todos', texto: 'Todos los pedidos' },
@@ -14,6 +17,8 @@ const ESTADOS = [
     { valor: 'En camino', texto: 'Pedidos en camino' },
     { valor: 'Cancelado', texto: 'Pedidos cancelados' },
 ]
+
+const PEDIDOS_POR_PAGINA = 10
 
 function HistorialEstadisticas() {
     const [estado, setEstado] = useState('Entregado')
@@ -25,8 +30,13 @@ function HistorialEstadisticas() {
         gananciasTotales: 0,
     })
 
+    const [pagina, setPagina] = useState(1)
+
     const [cargando, setCargando] = useState(true)
     const [error, setError] = useState('')
+
+    // Cuando esto tiene un valor { origen, destino, nombreRestaurante }, se abre el modal del mapa
+    const [modalMapa, setModalMapa] = useState(null)
 
     const cargarDatos = useCallback(async () => {
         try {
@@ -55,6 +65,8 @@ function HistorialEstadisticas() {
                     datos.estadisticas?.gananciasTotales ?? 0
                 ),
             })
+
+            setPagina(1)
         } catch (err) {
             console.error(
                 'Error al cargar el historial del repartidor:',
@@ -128,8 +140,43 @@ function HistorialEstadisticas() {
         }
     }
 
+    // Abre el modal del mapa con el origen (restaurante) y destino (dirección de entrega) del pedido
+    function abrirMapa(pedido) {
+        const origen = [
+            Number(pedido.latitudRestaurante),
+            Number(pedido.longitudRestaurante),
+        ]
+        const destino = [
+            Number(pedido.latitudEntrega),
+            Number(pedido.longitudEntrega),
+        ]
+
+        setModalMapa({
+            origen,
+            destino,
+            nombreRestaurante: pedido.nombreRestaurante ?? '',
+        })
+    }
+
+    function cerrarMapa() {
+        setModalMapa(null)
+    }
+
+    // Paginación en el cliente sobre la lista ya filtrada por el servidor
+    const totalPedidos = pedidos.length
+    const totalPaginas = Math.max(
+        1,
+        Math.ceil(totalPedidos / PEDIDOS_POR_PAGINA)
+    )
+    const pedidosPagina = pedidos.slice(
+        (pagina - 1) * PEDIDOS_POR_PAGINA,
+        pagina * PEDIDOS_POR_PAGINA
+    )
+
+    const modalAbierto = modalMapa !== null
+
     return (
-        <section className="mx-auto w-full max-w-7xl">
+        <section className="mx-auto w-full max-w-7xl text-white">
             <div className="mb-8">
                 <h1 className="text-4xl font-extrabold text-lime-400 md:text-5xl">
                     Historial y Estadísticas
@@ -145,7 +192,7 @@ function HistorialEstadisticas() {
                     Historial de pedidos
                 </h2>
 
-                <div className="mb-7 grid gap-4 rounded-2xl border border-slate-600 bg-slate-900/60 p-5 md:grid-cols-2 xl:grid-cols-[1fr_1fr_auto]">
+                <div className="mb-7 grid gap-4 rounded-2xl border border-slate-700 bg-slate-700 p-5 md:grid-cols-2 xl:grid-cols-[1fr_1fr_auto]">
                     <div>
                         <label
                             htmlFor="estado-pedido"
@@ -181,32 +228,35 @@ function HistorialEstadisticas() {
                             Fecha
                         </label>
 
-                        <div className="relative">
-                            <input
-                                id="fecha-pedido"
-                                type="date"
-                                value={fecha}
-                                onChange={(evento) =>
-                                    setFecha(evento.target.value)
-                                }
-                                className="w-full rounded-xl border border-slate-500 bg-slate-800 px-4 py-3 pr-11 text-white outline-none transition [color-scheme:dark] focus:border-lime-400"
-                            />
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                                <input
+                                    id="fecha-pedido"
+                                    type="date"
+                                    value={fecha}
+                                    onChange={(evento) =>
+                                        setFecha(evento.target.value)
+                                    }
+                                    className="w-full rounded-xl border border-slate-500 bg-slate-800 px-4 py-3 pr-11 text-white outline-none transition [color-scheme:dark] focus:border-lime-400"
+                                />
 
-                            <CalendarDays
-                                size={20}
-                                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-300"
-                            />
-                        </div>
+                                <CalendarDays
+                                    size={20}
+                                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-300"
+                                />
+                            </div>
 
-                        {fecha && (
                             <button
                                 type="button"
                                 onClick={limpiarFecha}
-                                className="mt-2 text-sm text-sky-300 hover:text-sky-200"
+                                disabled={!fecha}
+                                title="Restablecer fecha"
+                                className="flex items-center gap-1 rounded-full border border-slate-400 px-3 py-3 text-xs font-semibold text-slate-200 transition hover:border-lime-400 hover:text-lime-400 disabled:cursor-not-allowed disabled:opacity-30"
                             >
-                                Mostrar todas las fechas
+                                <RotateCcw size={16} />
+                                Restablecer
                             </button>
-                        )}
+                        </div>
                     </div>
 
                     <div className="flex items-end">
@@ -214,7 +264,7 @@ function HistorialEstadisticas() {
                             type="button"
                             onClick={cargarDatos}
                             disabled={cargando}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white px-5 py-3 font-semibold text-white transition hover:bg-white hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 xl:w-auto"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-5 py-3 font-semibold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-60 xl:w-auto"
                         >
                             <RefreshCw
                                 size={19}
@@ -257,160 +307,100 @@ function HistorialEstadisticas() {
 
                 {!cargando && !error && pedidos.length > 0 && (
                     <>
-                        {/* Tabla para computadoras */}
-                        <div className="hidden overflow-hidden rounded-2xl border border-slate-600 md:block">
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full">
-                                    <thead className="bg-white text-slate-700">
-                                    <tr>
-                                        <th className="border-r border-slate-300 px-4 py-4 text-left text-sm font-semibold">
-                                            Cliente
-                                        </th>
+                        <div className="overflow-x-auto rounded-2xl border border-slate-700">
+                            <table className="w-full min-w-[820px] border-collapse">
+                                <thead className="bg-slate-100 text-slate-800">
+                                <tr>
+                                    <th className="px-4 py-3 text-left font-medium">
+                                        Cliente
+                                    </th>
+                                    <th className="px-4 py-3 text-center font-medium">
+                                        Distancia
+                                    </th>
+                                    <th className="px-4 py-3 text-center font-medium">
+                                        Dirección
+                                    </th>
+                                    <th className="px-4 py-3 text-center font-medium">
+                                        Tiempo
+                                    </th>
+                                    <th className="px-4 py-3 text-center font-medium">
+                                        Fecha
+                                    </th>
+                                    <th className="px-4 py-3 text-center font-medium">
+                                        Estado
+                                    </th>
+                                    <th className="px-4 py-3 text-right font-medium">
+                                        Ganancia
+                                    </th>
+                                </tr>
+                                </thead>
 
-                                        <th className="border-r border-slate-300 px-4 py-4 text-center text-sm font-semibold">
-                                            Distancia
-                                        </th>
+                                <tbody className="bg-slate-700 text-white">
+                                {pedidosPagina.map((pedido) => (
+                                    <tr
+                                        key={pedido.pedidoId}
+                                        className="border-t border-slate-600"
+                                    >
+                                        <td className="px-4 py-3 font-medium">
+                                            {pedido.cliente}
+                                        </td>
 
-                                        <th className="border-r border-slate-300 px-4 py-4 text-left text-sm font-semibold">
-                                            Dirección
-                                        </th>
-
-                                        <th className="border-r border-slate-300 px-4 py-4 text-center text-sm font-semibold">
-                                            Tiempo
-                                        </th>
-
-                                        <th className="border-r border-slate-300 px-4 py-4 text-center text-sm font-semibold">
-                                            Estado
-                                        </th>
-
-                                        <th className="px-4 py-4 text-right text-sm font-semibold">
-                                            Ganancia
-                                        </th>
-                                    </tr>
-                                    </thead>
-
-                                    <tbody className="divide-y divide-slate-600">
-                                    {pedidos.map((pedido) => (
-                                        <tr
-                                            key={pedido.pedidoId}
-                                            className="bg-sky-800/70 text-slate-100 transition hover:bg-sky-700"
-                                        >
-                                            <td className="border-r border-slate-600 px-4 py-4 font-medium">
-                                                {pedido.cliente}
-                                            </td>
-
-                                            <td className="border-r border-slate-600 px-4 py-4 text-center">
-                                                {formatearDistancia(
-                                                    pedido.distanciaKm
-                                                )}{' '}
-                                                km
-                                            </td>
-
-                                            <td className="border-r border-slate-600 px-4 py-4">
-                                                {pedido.direccion}
-                                            </td>
-
-                                            <td className="border-r border-slate-600 px-4 py-4 text-center">
-                                                {pedido.tiempoMinutos}{' '}
-                                                min
-                                            </td>
-
-                                            <td className="border-r border-slate-600 px-4 py-4 text-center">
-                                                    <span
-                                                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${obtenerClaseEstado(
-                                                            pedido.estado
-                                                        )}`}
-                                                    >
-                                                        {pedido.estado}
-                                                    </span>
-                                            </td>
-
-                                            <td className="px-4 py-4 text-right font-bold">
-                                                {formatearMoneda(
-                                                    pedido.ganancia
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* Tarjetas para celulares */}
-                        <div className="grid gap-4 md:hidden">
-                            {pedidos.map((pedido) => (
-                                <article
-                                    key={pedido.pedidoId}
-                                    className="rounded-2xl border border-slate-600 bg-sky-800/70 p-5 text-white"
-                                >
-                                    <div className="mb-4 flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-xs text-sky-200">
-                                                Pedido #{pedido.pedidoId}
-                                            </p>
-
-                                            <h3 className="text-lg font-bold">
-                                                {pedido.cliente}
-                                            </h3>
-                                        </div>
-
-                                        <span
-                                            className={`rounded-full border px-3 py-1 text-xs font-semibold ${obtenerClaseEstado(
-                                                pedido.estado
-                                            )}`}
-                                        >
-                                            {pedido.estado}
-                                        </span>
-                                    </div>
-
-                                    <div className="space-y-2 text-sm text-slate-100">
-                                        <p>
-                                            <span className="font-semibold">
-                                                Dirección:
-                                            </span>{' '}
-                                            {pedido.direccion}
-                                        </p>
-
-                                        <p>
-                                            <span className="font-semibold">
-                                                Distancia:
-                                            </span>{' '}
+                                        <td className="px-4 py-3 text-center whitespace-nowrap">
                                             {formatearDistancia(
                                                 pedido.distanciaKm
                                             )}{' '}
                                             km
-                                        </p>
+                                        </td>
 
-                                        <p>
-                                            <span className="font-semibold">
-                                                Tiempo:
-                                            </span>{' '}
-                                            {pedido.tiempoMinutos} minutos
-                                        </p>
+                                        <td className="px-4 py-3 text-center">
+                                            <button
+                                                onClick={() =>
+                                                    abrirMapa(pedido)
+                                                }
+                                                className="rounded-full border border-slate-400 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-lime-400 hover:text-lime-400 whitespace-nowrap"
+                                            >
+                                                Ver ubicación
+                                            </button>
+                                        </td>
 
-                                        <p>
-                                            <span className="font-semibold">
-                                                Fecha:
-                                            </span>{' '}
+                                        <td className="px-4 py-3 text-center whitespace-nowrap">
+                                            {pedido.tiempoMinutos} min
+                                        </td>
+
+                                        <td className="px-4 py-3 text-center whitespace-nowrap">
                                             {formatearFecha(
                                                 pedido.fechaEntrega ??
                                                 pedido.fechaPedido
                                             )}
-                                        </p>
+                                        </td>
 
-                                        <p>
-                                            <span className="font-semibold">
-                                                Ganancia:
-                                            </span>{' '}
+                                        <td className="px-4 py-3 text-center">
+                                            <span
+                                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${obtenerClaseEstado(
+                                                    pedido.estado
+                                                )}`}
+                                            >
+                                                {pedido.estado}
+                                            </span>
+                                        </td>
+
+                                        <td className="px-4 py-3 text-right font-bold whitespace-nowrap">
                                             {formatearMoneda(
                                                 pedido.ganancia
                                             )}
-                                        </p>
-                                    </div>
-                                </article>
-                            ))}
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
                         </div>
+
+                        <PaginacionProductos
+                            pagina={pagina}
+                            totalPaginas={totalPaginas}
+                            total={totalPedidos}
+                            onCambiarPagina={setPagina}
+                        />
                     </>
                 )}
 
@@ -454,6 +444,14 @@ function HistorialEstadisticas() {
                     </div>
                 </div>
             </div>
+
+            <MapaUbicacionModal
+                abierto={modalAbierto}
+                onClose={cerrarMapa}
+                origen={modalMapa?.origen ?? null}
+                destino={modalMapa?.destino ?? null}
+                nombreRestaurante={modalMapa?.nombreRestaurante ?? ''}
+            />
         </section>
     )
 }

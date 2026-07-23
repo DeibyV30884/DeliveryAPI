@@ -214,10 +214,21 @@ public class PedidoService : IPedidoService
                 p.FechaPedido,
                 p.FechaEntrega,
                 p.DireccionEntrega,
+                p.LatitudEntrega,
+                p.LongitudEntrega,
 
                 NombreRestaurante = p.Restaurante != null
                     ? p.Restaurante.NombreRestaurante
                     : "Restaurante no disponible",
+
+                // Coordenadas del restaurante, necesarias para dibujar la ruta en el mapa
+                LatitudRestaurante = p.Restaurante != null
+                    ? p.Restaurante.Latitud
+                    : (decimal?)null,
+
+                LongitudRestaurante = p.Restaurante != null
+                    ? p.Restaurante.Longitud
+                    : (decimal?)null,
 
                 Productos = p.DetallesPedido
                     .Select(d => new

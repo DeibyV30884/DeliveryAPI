@@ -14,18 +14,23 @@ public class RecargaSaldoService : IRecargaSaldoService
     {
         _context = context;
     }
+
+    private async Task<Cliente?> ObtenerClienteActivo(int clienteId)
+    {
+        return await _context.Clientes
+            .FirstOrDefaultAsync(c => c.ClienteId == clienteId && c.Activo);
+    }
+
     public async Task<ServiceResult> BuscarClientes(string termino)
     {
         var clientes = await _context.Clientes
             .Include(c => c.Usuario)
-            .Where(c => c.Activo &&
-                        c.Usuario != null &&
-                        (
-                            c.Usuario.Nombre.Contains(termino) ||
-                            c.Usuario.Apellido.Contains(termino) ||
-                            c.Usuario.Cedula.Contains(termino) ||
-                            c.Usuario.Email.Contains(termino)
-                        ))
+            .Where(c => c.Activo
+                     && c.Usuario != null
+                     && (c.Usuario.Nombre.Contains(termino)
+                      || c.Usuario.Apellido.Contains(termino)
+                      || c.Usuario.Cedula.Contains(termino)
+                      || c.Usuario.Email.Contains(termino)))
             .Select(c => new
             {
                 c.ClienteId,
@@ -39,7 +44,7 @@ public class RecargaSaldoService : IRecargaSaldoService
 
         return ServiceResult.Ok(clientes);
     }
-    
+
     public async Task<ServiceResult> ObtenerHistorial()
     {
         var historial = await _context.RecargasSaldo
@@ -51,12 +56,15 @@ public class RecargaSaldoService : IRecargaSaldoService
             {
                 r.RecargaId,
                 r.ClienteId,
+
                 Cliente = r.Cliente != null && r.Cliente.Usuario != null
                     ? r.Cliente.Usuario.Nombre + " " + r.Cliente.Usuario.Apellido
                     : "Cliente no disponible",
+
                 RealizadoPor = r.Admin != null
                     ? r.Admin.Nombre + " " + r.Admin.Apellido
                     : "Administrador no disponible",
+
                 r.Monto,
                 MetodoPago = r.Nota,
                 r.Fecha
@@ -65,16 +73,13 @@ public class RecargaSaldoService : IRecargaSaldoService
 
         return ServiceResult.Ok(historial);
     }
-    
-    
+
     public async Task<ServiceResult> CrearRecarga(int adminUsuarioId, CrearRecargaSaldoDto dto)
     {
         if (dto.Monto <= 0)
             return ServiceResult.Fallo("El monto debe ser mayor a cero");
 
-        var cliente = await _context.Clientes
-            .FirstOrDefaultAsync(c => c.ClienteId == dto.ClienteId && c.Activo);
-
+        var cliente = await ObtenerClienteActivo(dto.ClienteId);
         if (cliente == null)
             return ServiceResult.Fallo("Cliente no encontrado o inactivo");
 
@@ -108,5 +113,4 @@ public class RecargaSaldoService : IRecargaSaldoService
             recarga.Fecha
         });
     }
-    
 }

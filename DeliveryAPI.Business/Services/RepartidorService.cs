@@ -78,7 +78,13 @@ public class RepartidorService : IRepartidorService
         if (repartidor == null)
             return ServiceResult.Fallo("Datos de repartidor no encontrados");
 
-        
+        // Sacamos el nombre del restaurante a mano, revisando primero si existe
+        string? nombreRestaurante = null;
+        if (repartidor.Restaurante != null)
+        {
+            nombreRestaurante = repartidor.Restaurante.NombreRestaurante;
+        }
+
         return ServiceResult.Ok(new
         {
             usuario.Nombre,
@@ -87,7 +93,7 @@ public class RepartidorService : IRepartidorService
             usuario.Telefono,
             usuario.Cedula,
             repartidor.RestauranteId,
-            RestauranteNombre = repartidor.Restaurante?.NombreRestaurante,
+            RestauranteNombre = nombreRestaurante,
             repartidor.Disponible
         });
     }
@@ -110,7 +116,7 @@ public class RepartidorService : IRepartidorService
 
         if (usuario.Email != dto.Email)
         {
-            bool emailEnUso = await _context.Usuarios 
+            bool emailEnUso = await _context.Usuarios
                 .AnyAsync(u => u.Email == dto.Email && u.UsuarioId != usuarioId);
             if (emailEnUso)
                 return ServiceResult.Fallo("El correo electrónico ya está en uso");
@@ -121,13 +127,13 @@ public class RepartidorService : IRepartidorService
             usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
         // Cedula y RestauranteId no se cambian aqui: son solo de vista
-        // Disponible no va a maneja desde este aqui, se maneja desde el panel principal 
+        // Disponible no va a maneja desde este aqui, se maneja desde el panel principal
 
         await _context.SaveChangesAsync();
 
         return ServiceResult.Ok(new { mensaje = "Perfil actualizado correctamente" });
     }
-    
+
     public async Task<ServiceResult> CambiarDisponibilidad(int usuarioId, bool disponible)
     {
         var repartidor = await _context.Repartidores
@@ -161,87 +167,125 @@ public class RepartidorService : IRepartidorService
 
         return ServiceResult.Ok(new { mensaje = "Perfil desactivado correctamente" });
     }
-    
+
+    // Calcula que fecha usar para ordenar y filtrar un pedido: la de entrega si ya existe,
+    // si no la fecha en la que se hizo el pedido
+    private DateTime ObtenerFechaDeReferencia(Pedido pedido)
+    {
+        if (pedido.FechaEntrega.HasValue)
+        {
+            return pedido.FechaEntrega.Value;
+        }
+
+        return pedido.FechaPedido;
+    }
+
     public async Task<ServiceResult> ObtenerHistorialYEstadisticas(
-    int usuarioId,
-    string? estado,
-    DateTime? fecha)
-{
-    var repartidor = await _context.Repartidores
-        .AsNoTracking()
-        .FirstOrDefaultAsync(r =>
-            r.UsuarioId == usuarioId &&
-            r.Activo);
-
-    if (repartidor == null)
-        return ServiceResult.Fallo("Repartidor no encontrado");
-
-    var consulta = _context.Pedidos
-        .AsNoTracking()
-        .Where(p => p.RepartidorId == repartidor.RepartidorId);
-    
-    if (!string.IsNullOrWhiteSpace(estado) &&
-        !estado.Equals("Todos", StringComparison.OrdinalIgnoreCase))
+        int usuarioId,
+        string? estado, 
+        DateTime? fecha)
     {
-        consulta = consulta.Where(p => p.Estado == estado);
-    }
-    
-    if (fecha.HasValue)
-    {
-        var fechaInicio = fecha.Value.Date;
-        var fechaFin = fechaInicio.AddDays(1);
+        var repartidor = await _context.Repartidores
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r =>  r.UsuarioId == usuarioId && r.Activo);
 
-        consulta = consulta.Where(p =>
-            (p.FechaEntrega ?? p.FechaPedido) >= fechaInicio &&
-            (p.FechaEntrega ?? p.FechaPedido) < fechaFin);
-    }
+        if (repartidor == null)
+            return ServiceResult.Fallo("Repartidor no encontrado");
 
-    var pedidosBase = await consulta
-        .OrderByDescending(p => p.FechaEntrega ?? p.FechaPedido)
-        .Select(p => new
+        var consulta = _context.Pedidos
+            .AsNoTracking() 
+            .Include(p => p.Restaurante) 
+            .Include(p => p.Cliente)
+            .ThenInclude(c => c.Usuario)
+            .Where(p => p.RepartidorId == repartidor.RepartidorId);
+        
+
+        if (!string.IsNullOrWhiteSpace(estado) &&
+            
+            !estado.Equals("Todos", StringComparison.OrdinalIgnoreCase))
         {
-            p.PedidoId,
-            p.DistanciaKm,
-            p.DireccionEntrega,
-            p.TiempoEstimadoMin,
-            p.Estado,
-            p.CostoEnvio,
-            p.FechaPedido,
-            p.FechaEntrega,
+            consulta = consulta.Where(p => p.Estado == estado);
+        }
 
-            ClienteNombre = p.Cliente != null &&
-                            p.Cliente.Usuario != null
-                ? p.Cliente.Usuario.Nombre
-                : "Cliente",
+        // Traemos los pedidos de la base de datos y hacemos el resto a mano
+        var pedidosDeLaBd = await consulta.ToListAsync();
 
-            ClienteApellido = p.Cliente != null &&
-                              p.Cliente.Usuario != null
-                ? p.Cliente.Usuario.Apellido
-                : null
-        })
-        .ToListAsync();
+        // Ordenamos del mas reciente al mas viejo
+        pedidosDeLaBd = pedidosDeLaBd
+            .OrderByDescending(p => ObtenerFechaDeReferencia(p))
+            .ToList();
 
-    var pedidos = pedidosBase
-        .Select(p =>
+        var pedidos = new List<object>();
+        int pedidosEntregadosCount = 0;
+        decimal gananciasTotales = 0m;
+
+        foreach (var p in pedidosDeLaBd)
         {
-            var tiempoRealMinutos = p.FechaEntrega.HasValue
-                ? (int)Math.Round(
-                    (p.FechaEntrega.Value - p.FechaPedido).TotalMinutes)
-                : 0;
+            var fechaDeReferencia = ObtenerFechaDeReferencia(p);
 
-            var tiempoMinutos = tiempoRealMinutos > 0
-                ? tiempoRealMinutos
-                : p.TiempoEstimadoMin;
+            // Si el usuario pidio filtrar por un dia especifico, revisamos si el pedido cae ahi
+            if (fecha.HasValue)
+            {
+                var fechaInicio = fecha.Value.Date;
+                var fechaFin = fechaInicio.AddDays(1);
 
-            var entregado = p.Estado.Equals(
-                "Entregado",
-                StringComparison.OrdinalIgnoreCase);
+                if (fechaDeReferencia < fechaInicio || fechaDeReferencia >= fechaFin)
+                {
+                    continue;}
+            }
 
-            var nombreCliente = string.IsNullOrWhiteSpace(p.ClienteApellido)
-                ? p.ClienteNombre
-                : $"{p.ClienteNombre} {p.ClienteApellido}";
+            // Nombre del cliente
+            string nombreCliente = "Cliente";
+            if (p.Cliente != null && p.Cliente.Usuario != null)
+            {
+                if (string.IsNullOrWhiteSpace(p.Cliente.Usuario.Apellido))
+                {
+                    nombreCliente = p.Cliente.Usuario.Nombre;}
+                else
+                {
+                    nombreCliente = p.Cliente.Usuario.Nombre + " " + p.Cliente.Usuario.Apellido;}
+            }
 
-            return new
+            // Datos del restaurante, necesarios para dibujar la ruta en el mapa
+            string? nombreRestaurante = null;
+            decimal? latitudRestaurante = null;
+            decimal? longitudRestaurante = null;
+            if (p.Restaurante != null)
+            {
+                nombreRestaurante = p.Restaurante.NombreRestaurante;
+                latitudRestaurante = p.Restaurante.Latitud;
+                longitudRestaurante = p.Restaurante.Longitud;
+            }
+
+            
+            // Tiempo que tardo el pedido: si ya se entrego usamos el tiempo real, si no el estimado
+            int tiempoMinutos;
+            if (p.FechaEntrega.HasValue)
+            {
+                int tiempoReal = (int)Math.Round((p.FechaEntrega.Value - p.FechaPedido).TotalMinutes);
+                if (tiempoReal > 0)
+                {
+                    tiempoMinutos = tiempoReal; }
+                
+                else
+                {
+                    tiempoMinutos = p.TiempoEstimadoMin; }
+            }
+            else
+            {
+                tiempoMinutos = p.TiempoEstimadoMin;}
+
+            bool entregado = p.Estado.Equals("Entregado", StringComparison.OrdinalIgnoreCase);
+
+            decimal ganancia = 0m;
+            if (entregado)
+            {
+                ganancia = p.CostoEnvio;
+                pedidosEntregadosCount = pedidosEntregadosCount + 1;
+                gananciasTotales = gananciasTotales + ganancia;
+            }
+
+            pedidos.Add(new
             {
                 p.PedidoId,
                 Cliente = nombreCliente,
@@ -249,34 +293,29 @@ public class RepartidorService : IRepartidorService
                 Direccion = p.DireccionEntrega,
                 TiempoMinutos = tiempoMinutos,
                 p.Estado,
-                
-                Ganancia = entregado
-                    ? p.CostoEnvio
-                    : 0m,
-
+                Ganancia = ganancia,
                 p.FechaPedido,
-                p.FechaEntrega
-            };
-        })
-        .ToList();
+                p.FechaEntrega,
 
-    var pedidosEntregados = pedidos
-        .Where(p => p.Estado.Equals(
-            "Entregado",
-            StringComparison.OrdinalIgnoreCase))
-        .ToList();
+                // Coordenadas de entrega y del restaurante para el mapa
+                p.LatitudEntrega,
+                p.LongitudEntrega,
+                NombreRestaurante = nombreRestaurante,
+                LatitudRestaurante = latitudRestaurante,
+                LongitudRestaurante = longitudRestaurante
+            });
+        }
 
-    var estadisticas = new
-    {
-        PedidosEntregados = pedidosEntregados.Count,
-        GananciasTotales = pedidosEntregados.Sum(p => p.Ganancia)
-    };
+        var estadisticas = new
+        {
+            PedidosEntregados = pedidosEntregadosCount,
+            GananciasTotales = gananciasTotales
+        };
 
-    return ServiceResult.Ok(new
-    {
-        Pedidos = pedidos,
-        Estadisticas = estadisticas
-    });
-}
-    
+        return ServiceResult.Ok(new
+        {
+            Pedidos = pedidos,
+            Estadisticas = estadisticas
+        });
+    }
 }

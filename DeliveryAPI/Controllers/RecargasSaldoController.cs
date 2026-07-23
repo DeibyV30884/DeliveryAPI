@@ -8,7 +8,7 @@ namespace DeliveryAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Administrador")]
 public class RecargasSaldoController : ControllerBase
 {
     private readonly IRecargaSaldoService _recargaSaldoService;

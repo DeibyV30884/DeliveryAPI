@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Users, UtensilsCrossed, Bike, ShieldCheck } from 'lucide-react'
 import apiClient from '../../api/client'
 
 function GestionUsuarios() {
@@ -115,6 +116,7 @@ function GestionUsuarios() {
         }, 300)
 
         return () => clearTimeout(temporizador)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [busqueda, rol, pagina])
 
     const cambiarRol = (event) => {
@@ -127,25 +129,6 @@ function GestionUsuarios() {
         setPagina(1)
     }
 
-    const obtenerClaseRol = (rolUsuario) => {
-        switch (rolUsuario) {
-            case 'Administrador':
-                return 'bg-purple-200 text-purple-800'
-
-            case 'Cliente':
-                return 'bg-blue-200 text-blue-800'
-
-            case 'Restaurante':
-                return 'bg-orange-200 text-orange-800'
-
-            case 'Repartidor':
-                return 'bg-cyan-200 text-cyan-800'
-
-            default:
-                return 'bg-slate-200 text-slate-800'
-        }
-    }
-    
     const cambiarCampoAdministrador = (event) => {
         const { name, value } = event.target
 
@@ -213,16 +196,17 @@ function GestionUsuarios() {
             setGuardando(false)
         }
     }
+
     return (
         <div className="bg-slate-900 p-8">
             <div className="mx-auto max-w-7xl">
                 <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-white">
+                        <h1 className="text-4xl font-extrabold text-lime-400 md:text-5xl">
                             Gestión de Usuarios
                         </h1>
 
-                        <p className="mt-1 text-slate-400">
+                        <p className="mt-2 text-slate-300">
                             Consulta y administra los usuarios registrados.
                         </p>
                     </div>
@@ -234,7 +218,7 @@ function GestionUsuarios() {
                             setMensajeExito('')
                             setMostrarModal(true)
                         }}
-                        className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
+                        className="rounded-full border border-white px-6 py-2 text-sm font-semibold text-white transition hover:bg-white hover:text-slate-900"
                     >
                         Nuevo administrador
                     </button>
@@ -242,366 +226,367 @@ function GestionUsuarios() {
 
                 <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <TarjetaResumen
+                        icono={Users}
                         titulo="Clientes"
                         valor={resumen.clientes}
                     />
 
                     <TarjetaResumen
+                        icono={UtensilsCrossed}
                         titulo="Restaurantes"
                         valor={resumen.restaurantes}
                     />
 
                     <TarjetaResumen
+                        icono={Bike}
                         titulo="Repartidores"
                         valor={resumen.repartidores}
                     />
 
                     <TarjetaResumen
+                        icono={ShieldCheck}
                         titulo="Administradores"
                         valor={resumen.administradores}
                     />
                 </section>
 
-                <section className="rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-lg">
-                    <div className="mb-6 flex flex-col gap-4 md:flex-row">
-                        <input
-                            type="text"
-                            value={busqueda}
-                            onChange={cambiarBusqueda}
-                            placeholder="Buscar por nombre, correo, teléfono o cédula"
-                            className="flex-1 rounded-lg border border-slate-600 bg-slate-900 px-4 py-3 text-white outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-900"
-                        />
+                <section className="rounded-2xl bg-slate-800 p-5 shadow-xl md:p-8">
+                    <h2 className="mb-5 text-xl font-bold uppercase text-white">
+                        Usuarios registrados
+                    </h2>
 
-                        <select
-                            value={rol}
-                            onChange={cambiarRol}
-                            className="rounded-lg border border-slate-600 bg-slate-900 px-4 py-3 text-white outline-none focus:border-blue-500"
-                        >
-                            <option value="Todos">
-                                Todos los roles
-                            </option>
+                    <div className="mb-7 grid gap-4 rounded-2xl border border-slate-700 bg-slate-700 p-5 md:grid-cols-2">
+                        <div>
+                            <label
+                                htmlFor="buscar-usuario"
+                                className="mb-2 block text-sm font-semibold text-slate-200"
+                            >
+                                Buscar
+                            </label>
 
-                            <option value="Cliente">
-                                Cliente
-                            </option>
+                            <input
+                                id="buscar-usuario"
+                                type="text"
+                                value={busqueda}
+                                onChange={cambiarBusqueda}
+                                placeholder="Nombre, correo, teléfono o cédula"
+                                className="w-full rounded-xl border border-slate-500 bg-slate-800 px-4 py-3 text-white outline-none transition placeholder:text-slate-400 focus:border-lime-400"
+                            />
+                        </div>
 
-                            <option value="Restaurante">
-                                Restaurante
-                            </option>
+                        <div>
+                            <label
+                                htmlFor="filtro-rol"
+                                className="mb-2 block text-sm font-semibold text-slate-200"
+                            >
+                                Rol
+                            </label>
 
-                            <option value="Repartidor">
-                                Repartidor
-                            </option>
+                            <select
+                                id="filtro-rol"
+                                value={rol}
+                                onChange={cambiarRol}
+                                className="w-full rounded-xl border border-slate-500 bg-slate-800 px-4 py-3 text-white outline-none transition focus:border-lime-400"
+                            >
+                                <option value="Todos">
+                                    Todos los roles
+                                </option>
 
-                            <option value="Administrador">
-                                Administrador
-                            </option>
-                        </select>
+                                <option value="Cliente">
+                                    Cliente
+                                </option>
+
+                                <option value="Restaurante">
+                                    Restaurante
+                                </option>
+
+                                <option value="Repartidor">
+                                    Repartidor
+                                </option>
+
+                                <option value="Administrador">
+                                    Administrador
+                                </option>
+                            </select>
+                        </div>
                     </div>
 
                     {error && (
-                        <div className="mb-4 rounded-lg bg-red-900 px-4 py-3 text-red-200">
+                        <div className="mb-6 rounded-xl border border-red-400 bg-red-500/20 p-4 text-red-100">
                             {error}
                         </div>
                     )}
 
-                    {cargando ? (
-                        <p className="py-10 text-center text-slate-300">
+                    {cargando && (
+                        <div className="rounded-xl border border-slate-600 bg-slate-700/50 p-10 text-center text-slate-200">
                             Cargando usuarios...
-                        </p>
-                    ) : usuarios.length === 0 ? (
-                        <p className="py-10 text-center text-slate-300">
+                        </div>
+                    )}
+
+                    {!cargando && usuarios.length === 0 && (
+                        <div className="rounded-xl border border-slate-600 bg-slate-700/50 p-10 text-center text-slate-200">
                             No se encontraron usuarios.
-                        </p>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full border-collapse">
-                                <thead>
-                                    <tr className="border-b border-slate-700 bg-slate-900 text-left text-sm text-slate-300">
-                                        <th className="px-4 py-4">
-                                            Usuario
-                                        </th>
+                        </div>
+                    )}
 
-                                        <th className="px-4 py-4">
-                                            Cédula
-                                        </th>
+                    {!cargando && usuarios.length > 0 && (
+                        <div className="overflow-x-auto rounded-2xl border border-slate-700">
+                            <table className="w-full min-w-[900px] border-collapse">
+                                <thead className="bg-slate-100 text-slate-800">
+                                <tr>
+                                    <th className="px-4 py-3 text-left font-medium">
+                                        Usuario
+                                    </th>
 
-                                        <th className="px-4 py-4">
-                                            Teléfono
-                                        </th>
+                                    <th className="px-4 py-3 text-left font-medium">
+                                        Cédula
+                                    </th>
 
-                                        <th className="px-4 py-4">
-                                            Correo
-                                        </th>
+                                    <th className="px-4 py-3 text-left font-medium">
+                                        Teléfono
+                                    </th>
 
-                                        <th className="px-4 py-4">
-                                            Rol
-                                        </th>
+                                    <th className="px-4 py-3 text-left font-medium">
+                                        Correo
+                                    </th>
 
-                                        <th className="px-4 py-4">
-                                            Estado
-                                        </th>
+                                    <th className="px-4 py-3 text-center font-medium">
+                                        Rol
+                                    </th>
 
-                                        <th className="px-4 py-4">
-                                            Fecha de registro
-                                        </th>
+                                    <th className="px-4 py-3 text-center font-medium">
+                                        Estado
+                                    </th>
 
-                                        <th className="px-4 py-4 text-right">
-                                            Acción
-                                        </th>
-                                    </tr>
+                                    <th className="px-4 py-3 text-center font-medium">
+                                        Fecha de registro
+                                    </th>
+
+                                    <th className="px-4 py-3 text-right font-medium">
+                                        Acción
+                                    </th>
+                                </tr>
                                 </thead>
 
-                                <tbody>
-                                    {usuarios.map((usuario) => (
-                                        <tr
-                                            key={usuario.usuarioId}
-                                            className="border-b border-slate-700 text-sm transition hover:bg-slate-700"
-                                        >
-                                            <td className="px-4 py-4">
-                                                <p className="font-semibold text-white">
-                                                    {usuario.nombre}{' '}
-                                                    {usuario.apellido || ''}
-                                                </p>
-                                            </td>
+                                <tbody className="bg-slate-700 text-white">
+                                {usuarios.map((usuario) => (
+                                    <tr
+                                        key={usuario.usuarioId}
+                                        className="border-t border-slate-600"
+                                    >
+                                        <td className="px-4 py-3 font-medium">
+                                            {usuario.nombre}{' '}
+                                            {usuario.apellido || ''}
+                                        </td>
 
-                                            <td className="px-4 py-4 text-slate-200">
-                                                {usuario.cedula ||
-                                                    'No registrada'}
-                                            </td>
+                                        <td className="px-4 py-3 text-slate-200">
+                                            {usuario.cedula ||
+                                                'No registrada'}
+                                        </td>
 
-                                            <td className="px-4 py-4 text-slate-200">
-                                                {usuario.telefono ||
-                                                    'No registrado'}
-                                            </td>
+                                        <td className="px-4 py-3 text-slate-200 whitespace-nowrap">
+                                            {usuario.telefono ||
+                                                'No registrado'}
+                                        </td>
 
-                                            <td className="px-4 py-4 text-slate-200">
-                                                {usuario.email}
-                                            </td>
+                                        <td className="px-4 py-3 text-slate-200">
+                                            {usuario.email}
+                                        </td>
 
-                                            <td className="px-4 py-4">
-                                                <span
-                                                    className={`rounded-full px-3 py-1 text-xs font-semibold ${obtenerClaseRol(
-                                                        usuario.rol
-                                                    )}`}
-                                                >
+                                        <td className="px-4 py-3 text-center">
+                                                <span className="inline-flex rounded-full border border-white px-3 py-1 text-xs font-semibold text-white">
                                                     {usuario.rol}
                                                 </span>
-                                            </td>
+                                        </td>
 
-                                            <td className="px-4 py-4">
-                                                <span
-                                                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                                        usuario.activo
-                                                            ? 'bg-green-200 text-green-800'
-                                                            : 'bg-red-200 text-red-800'
-                                                    }`}
-                                                >
+                                        <td className="px-4 py-3 text-center">
+                                                <span className="inline-flex rounded-full border border-white px-3 py-1 text-xs font-semibold text-white">
                                                     {usuario.activo
                                                         ? 'Activo'
                                                         : 'Inactivo'}
                                                 </span>
-                                            </td>
+                                        </td>
 
-                                            <td className="px-4 py-4 text-slate-200">
-                                                {new Date(
-                                                    usuario.fechaRegistro
-                                                ).toLocaleDateString(
-                                                    'es-CR'
-                                                )}
-                                            </td>
+                                        <td className="px-4 py-3 text-center text-slate-200 whitespace-nowrap">
+                                            {new Date(
+                                                usuario.fechaRegistro
+                                            ).toLocaleDateString(
+                                                'es-CR'
+                                            )}
+                                        </td>
 
-                                            <td className="px-4 py-4 text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        cambiarEstado(
-                                                            usuario.usuarioId,
-                                                            usuario.activo
-                                                        )
-                                                    }
-                                                    className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                                        <td className="px-4 py-3 text-right">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    cambiarEstado(
+                                                        usuario.usuarioId,
                                                         usuario.activo
-                                                            ? 'bg-red-200 text-red-800 hover:bg-red-300'
-                                                            : 'bg-green-200 text-green-800 hover:bg-green-300'
-                                                    }`}
-                                                >
-                                                    {usuario.activo
-                                                        ? 'Desactivar'
-                                                        : 'Activar'}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                    )
+                                                }
+                                                className={`rounded-full border border-white px-4 py-1.5 text-xs font-semibold text-white transition whitespace-nowrap ${
+                                                    usuario.activo
+                                                        ? 'hover:border-red-600 hover:bg-red-600'
+                                                        : 'hover:bg-white hover:text-slate-700'
+                                                }`}
+                                            >
+                                                {usuario.activo
+                                                    ? 'Desactivar'
+                                                    : 'Activar'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
                                 </tbody>
                             </table>
                         </div>
                     )}
 
-                    <div className="mt-6 flex items-center justify-between">
-                        <button
-                            type="button"
-                            disabled={pagina <= 1}
-                            onClick={() =>
-                                setPagina((actual) => actual - 1)
-                            }
-                            className="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                            Anterior
-                        </button>
-
-                        <span className="text-sm text-slate-300">
-                            Página {pagina} de {totalPaginas}
-                        </span>
-
-                        <button
-                            type="button"
-                            disabled={pagina >= totalPaginas}
-                            onClick={() =>
-                                setPagina((actual) => actual + 1)
-                            }
-                            className="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                            Siguiente
-                        </button>
-                    </div>
+                    <PaginacionUsuarios
+                        pagina={pagina}
+                        totalPaginas={totalPaginas}
+                        onCambiarPagina={setPagina}
+                    />
                 </section>
             </div>
-                {mostrarModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-                        <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-2xl">
-                            <div className="mb-6 flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white">
-                                        Nuevo administrador
-                                    </h2>
 
-                                    <p className="mt-1 text-sm text-slate-400">
-                                        Complete los datos del nuevo administrador.
-                                    </p>
-                                </div>
+            {mostrarModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+                    <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-700 bg-slate-800 p-6 shadow-2xl">
+                        <div className="mb-6 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-2xl font-bold text-white">
+                                    Nuevo administrador
+                                </h2>
 
+                                <p className="mt-1 text-sm text-slate-300">
+                                    Complete los datos del nuevo administrador.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={cerrarModalAdministrador}
+                                className="rounded-lg px-3 py-2 text-xl text-slate-400 transition hover:bg-slate-700 hover:text-white"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        {error && (
+                            <div className="mb-4 rounded-xl border border-red-400 bg-red-500/20 px-4 py-3 text-red-100">
+                                {error}
+                            </div>
+                        )}
+
+                        {mensajeExito && (
+                            <div className="mb-4 rounded-xl border border-emerald-400 bg-emerald-500/20 px-4 py-3 text-emerald-100">
+                                {mensajeExito}
+                            </div>
+                        )}
+
+                        <form
+                            onSubmit={registrarAdministrador}
+                            className="grid gap-5 md:grid-cols-2"
+                        >
+                            <CampoFormulario
+                                etiqueta="Nombre"
+                                name="nombre"
+                                value={nuevoAdministrador.nombre}
+                                onChange={cambiarCampoAdministrador}
+                                required
+                            />
+
+                            <CampoFormulario
+                                etiqueta="Apellido"
+                                name="apellido"
+                                value={nuevoAdministrador.apellido}
+                                onChange={cambiarCampoAdministrador}
+                                required
+                            />
+
+                            <CampoFormulario
+                                etiqueta="Correo electrónico"
+                                name="email"
+                                type="email"
+                                value={nuevoAdministrador.email}
+                                onChange={cambiarCampoAdministrador}
+                                required
+                            />
+
+                            <CampoFormulario
+                                etiqueta="Contraseña"
+                                name="password"
+                                type="password"
+                                value={nuevoAdministrador.password}
+                                onChange={cambiarCampoAdministrador}
+                                required
+                                minLength={6}
+                            />
+
+                            <CampoFormulario
+                                etiqueta="Confirmar contraseña"
+                                name="confirmarPassword"
+                                type="password"
+                                value={nuevoAdministrador.confirmarPassword}
+                                onChange={cambiarCampoAdministrador}
+                                required
+                                minLength={6}
+                            />
+                            <CampoFormulario
+                                etiqueta="Teléfono"
+                                name="telefono"
+                                value={nuevoAdministrador.telefono}
+                                onChange={cambiarCampoAdministrador}
+                                required
+                            />
+
+                            <CampoFormulario
+                                etiqueta="Cédula"
+                                name="cedula"
+                                value={nuevoAdministrador.cedula}
+                                onChange={cambiarCampoAdministrador}
+                                required
+                            />
+
+                            <div className="flex justify-end gap-3 md:col-span-2">
                                 <button
                                     type="button"
                                     onClick={cerrarModalAdministrador}
-                                    className="rounded-lg px-3 py-2 text-xl text-slate-400 hover:bg-slate-700 hover:text-white"
+                                    disabled={guardando}
+                                    className="rounded-full border border-white px-6 py-2 text-sm font-semibold text-white transition hover:bg-slate-600 disabled:opacity-50"
                                 >
-                                    ×
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    disabled={guardando}
+                                    className="rounded-full border border-white px-6 py-2 text-sm font-semibold text-white transition hover:bg-white hover:text-slate-700 disabled:opacity-50"
+                                >
+                                    {guardando
+                                        ? 'Registrando...'
+                                        : 'Registrar administrador'}
                                 </button>
                             </div>
-
-                            {error && (
-                                <div className="mb-4 rounded-lg bg-red-900/60 px-4 py-3 text-red-200">
-                                    {error}
-                                </div>
-                            )}
-
-                            {mensajeExito && (
-                                <div className="mb-4 rounded-lg bg-green-900/60 px-4 py-3 text-green-200">
-                                    {mensajeExito}
-                                </div>
-                            )}
-
-                            <form
-                                onSubmit={registrarAdministrador}
-                                className="grid gap-5 md:grid-cols-2"
-                            >
-                                <CampoFormulario
-                                    etiqueta="Nombre"
-                                    name="nombre"
-                                    value={nuevoAdministrador.nombre}
-                                    onChange={cambiarCampoAdministrador}
-                                    required
-                                />
-
-                                <CampoFormulario
-                                    etiqueta="Apellido"
-                                    name="apellido"
-                                    value={nuevoAdministrador.apellido}
-                                    onChange={cambiarCampoAdministrador}
-                                    required
-                                />
-
-                                <CampoFormulario
-                                    etiqueta="Correo electrónico"
-                                    name="email"
-                                    type="email"
-                                    value={nuevoAdministrador.email}
-                                    onChange={cambiarCampoAdministrador}
-                                    required
-                                />
-
-                                <CampoFormulario
-                                    etiqueta="Contraseña"
-                                    name="password"
-                                    type="password"
-                                    value={nuevoAdministrador.password}
-                                    onChange={cambiarCampoAdministrador}
-                                    required
-                                    minLength={6}
-                                />
-
-                                <CampoFormulario
-                                    etiqueta="Confirmar contraseña"
-                                    name="confirmarPassword"
-                                    type="password"
-                                    value={nuevoAdministrador.confirmarPassword}
-                                    onChange={cambiarCampoAdministrador}
-                                    required
-                                    minLength={6}
-                                />
-                                <CampoFormulario
-                                    etiqueta="Teléfono"
-                                    name="telefono"
-                                    value={nuevoAdministrador.telefono}
-                                    onChange={cambiarCampoAdministrador}
-                                    required
-                                />
-
-                                <CampoFormulario
-                                    etiqueta="Cédula"
-                                    name="cedula"
-                                    value={nuevoAdministrador.cedula}
-                                    onChange={cambiarCampoAdministrador}
-                                    required
-                                />
-
-                                <div className="flex justify-end gap-3 md:col-span-2">
-                                    <button
-                                        type="button"
-                                        onClick={cerrarModalAdministrador}
-                                        disabled={guardando}
-                                        className="rounded-lg border border-slate-600 bg-slate-700 px-5 py-3 font-semibold text-white hover:bg-slate-600 disabled:opacity-50"
-                                    >
-                                        Cancelar
-                                    </button>
-
-                                    <button
-                                        type="submit"
-                                        disabled={guardando}
-                                        className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-                                    >
-                                        {guardando
-                                            ? 'Registrando...'
-                                            : 'Registrar administrador'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                        </form>
                     </div>
-                )}
+                </div>
+            )}
         </div>
     )
 }
 
-function TarjetaResumen({ titulo, valor }) {
+function TarjetaResumen({ icono: Icono, titulo, valor }) {
     return (
-        <article className="rounded-xl border border-slate-700 bg-slate-800 p-5 shadow-lg">
-            <p className="text-sm font-medium text-slate-400">
+        <article className="rounded-2xl border-2 border-white bg-slate-900/40 p-6 text-center text-white">
+            <Icono size={32} className="mx-auto mb-3 text-lime-400" />
+
+            <p className="text-lg font-semibold">
                 {titulo}
             </p>
 
-            <p className="mt-2 text-3xl font-bold text-white">
+            <p className="mt-3 text-3xl font-extrabold">
                 {valor}
             </p>
         </article>
@@ -609,14 +594,14 @@ function TarjetaResumen({ titulo, valor }) {
 }
 
 function CampoFormulario({
-    etiqueta,
-    name,
-    type = 'text',
-    value,
-    onChange,
-    required = false,
-    minLength,
-}) {
+                             etiqueta,
+                             name,
+                             type = 'text',
+                             value,
+                             onChange,
+                             required = false,
+                             minLength,
+                         }) {
     return (
         <label className="flex flex-col gap-2">
             <span className="text-sm font-medium text-slate-300">
@@ -630,9 +615,73 @@ function CampoFormulario({
                 onChange={onChange}
                 required={required}
                 minLength={minLength}
-                className="rounded-lg border border-slate-600 bg-slate-900 px-4 py-3 text-white outline-none focus:border-blue-500"
+                className="rounded-xl border border-slate-500 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-lime-400"
             />
         </label>
+    )
+}
+
+// Paginación numerada con el mismo look que PaginacionProductos.
+// No mostramos "Mostrando X-Y de Z" porque el endpoint solo devuelve totalPaginas, no el total exacto de usuarios filtrados.
+function PaginacionUsuarios({ pagina, totalPaginas, onCambiarPagina }) {
+    const paginas = []
+    for (let i = 1; i <= totalPaginas; i++) {
+        paginas.push(i)
+    }
+
+    function irPaginaAnterior() {
+        if (pagina > 1) {
+            onCambiarPagina(pagina - 1)
+        }
+    }
+
+    function irPaginaSiguiente() {
+        if (pagina < totalPaginas) {
+            onCambiarPagina(pagina + 1)
+        }
+    }
+
+    return (
+        <div className="mt-6 flex flex-col items-center gap-2 text-sm text-slate-300">
+            <p>
+                Página {pagina} de {totalPaginas}
+            </p>
+
+            <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                    onClick={irPaginaAnterior}
+                    disabled={pagina === 1}
+                    className="hover:text-lime-400 disabled:opacity-30"
+                >
+                    {'<'}
+                </button>
+
+                {paginas.map((numeroPagina) => {
+                    let claseBoton = 'hover:text-lime-400'
+                    if (numeroPagina === pagina) {
+                        claseBoton = 'text-lime-400 font-bold'
+                    }
+
+                    return (
+                        <button
+                            key={numeroPagina}
+                            onClick={() => onCambiarPagina(numeroPagina)}
+                            className={claseBoton}
+                        >
+                            {numeroPagina}
+                        </button>
+                    )
+                })}
+
+                <button
+                    onClick={irPaginaSiguiente}
+                    disabled={pagina === totalPaginas}
+                    className="hover:text-lime-400 disabled:opacity-30"
+                >
+                    {'>'}
+                </button>
+            </div>
+        </div>
     )
 }
 
