@@ -38,7 +38,6 @@ public class AdministradorController : ControllerBase
             return NotFound(new { mensaje = resultado.Mensaje });
         return Ok(resultado.Datos);
     }
-    
 
     [HttpPut("perfil")]
     public async Task<IActionResult> EditarPerfil(EditarAdministradorDto dto)
@@ -99,11 +98,12 @@ public class AdministradorController : ControllerBase
 
         return Ok(resultado.Datos);
     }
-    
+
+    // periodo puede ser: hoy, semana, mes y añio
     [HttpGet("dashboard")]
-    public async Task<IActionResult> ObtenerEstadisticasDashboard()
+    public async Task<IActionResult> ObtenerEstadisticasDashboard([FromQuery] string periodo = "hoy")
     {
-        var resultado = await _administradorService.ObtenerEstadisticasDashboard();
+        var resultado = await _administradorService.ObtenerEstadisticasDashboard(periodo);
         if (!resultado.Exito)
             return BadRequest(new { mensaje = resultado.Mensaje });
         return Ok(resultado.Datos);

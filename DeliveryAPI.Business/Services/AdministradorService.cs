@@ -103,7 +103,7 @@ public class AdministradorService : IAdministradorService
 
         return ServiceResult.Ok(new { mensaje = "Perfil desactivado correctamente" });
     }
-    
+
     public async Task<ServiceResult> ObtenerUsuarios(
         string? busqueda,
         string? rol,
@@ -218,66 +218,105 @@ public class AdministradorService : IAdministradorService
                 ? "Usuario activado correctamente"
                 : "Usuario desactivado correctamente"
         });
-        
-        
     }
-    
-    public async Task<ServiceResult> ObtenerEstadisticasDashboard()
+
+    // Se calcula desde cuando empieza a contar el periodo pedido en hoy, semana, mes o año
+    private DateTime CalcularInicioDePeriodo(string periodo, DateTime ahora)
+    {
+        if (periodo == "semana")
         {
-            var ahora = DateTime.Now;
-            var hoy = ahora.Date;
-            var inicioMes = new DateTime(ahora.Year, ahora.Month, 1);
-            var pedidosEntregadosHoy = await _context.Pedidos
-                .Where(p => p.Estado == "Entregado"
-                            && p.FechaEntrega != null
-                            && p.FechaEntrega.Value.Date == hoy)
-                .ToListAsync();
+            int diasDesdeLunes = ((int)ahora.DayOfWeek + 6) % 7;
+            return ahora.Date.AddDays(-diasDesdeLunes);
+        }
 
-            var gananciasHoy = pedidosEntregadosHoy.Sum(p => p.ComisionPlataforma);
+        if (periodo == "mes")
+        {
+            return new DateTime(ahora.Year, ahora.Month, 1);
+        }
 
-            var pedidosDelMesPorRestaurante = await _context.Pedidos
-                .Where(p => p.Estado == "Entregado"
-                            && p.FechaEntrega != null
-                            && p.FechaEntrega.Value >= inicioMes)
-                .GroupBy(p => p.RestauranteId)
-                .Select(g => new
-                {
-                    RestauranteId = g.Key,
-                    Pedidos = g.Count(),
-                    Ganancias = g.Sum(p => p.ComisionPlataforma)
-                })
-                .OrderByDescending(g => g.Ganancias)
-                .Take(2)
-                .ToListAsync();
+        if (periodo == "anio" || periodo == "año")
+        {
+            return new DateTime(ahora.Year, 1, 1);
+        }
 
-            var restauranteIds = pedidosDelMesPorRestaurante.Select(p => p.RestauranteId).ToList();
+        // "hoy" o cualquier valor no reconocido cae aqui
+        return ahora.Date;
+    }
 
-            var restaurantesInfo = await (
-                from r in _context.Restaurantes
-                join u in _context.Usuarios on r.UsuarioId equals u.UsuarioId
-                where restauranteIds.Contains(r.RestauranteId)
-                select new { r.RestauranteId, r.NombreRestaurante, u.Email }
-            ).ToListAsync();
+    public async Task<ServiceResult> ObtenerEstadisticasDashboard(string? periodo)
+    {
+        string periodoUsado = periodo?.ToLower() ?? "hoy";
+        if (string.IsNullOrWhiteSpace(periodoUsado))
+        {
+            periodoUsado = "hoy";
+        }
 
-            var topRestaurantes = pedidosDelMesPorRestaurante.Select(p =>
+        var ahora = DateTime.Now;
+        var inicioPeriodo = CalcularInicioDePeriodo(periodoUsado, ahora);
+
+        var pedidosEntregadosPeriodo = await _context.Pedidos
+            .Where(p => p.Estado == "Entregado"
+                        && p.FechaEntrega != null
+                        && p.FechaEntrega.Value >= inicioPeriodo
+                        && p.FechaEntrega.Value <= ahora)
+            .ToListAsync();
+
+        decimal gananciasPeriodo = 0m;
+        foreach (var pedido in pedidosEntregadosPeriodo)
+        {
+            gananciasPeriodo = gananciasPeriodo + pedido.ComisionPlataforma;
+        }
+
+        var pedidosPorRestaurante = pedidosEntregadosPeriodo
+            .GroupBy(p => p.RestauranteId)
+            .Select(g => new
             {
-                var info = restaurantesInfo.FirstOrDefault(r => r.RestauranteId == p.RestauranteId);
-                return new
-                {
-                    p.RestauranteId,
-                    NombreRestaurante = info?.NombreRestaurante ?? "—",
-                    Email = info?.Email ?? "—",
-                    p.Pedidos,
-                    p.Ganancias
-                };
-            }).ToList();
+                RestauranteId = g.Key,
+                Pedidos = g.Count(),
+                Ganancias = g.Sum(p => p.ComisionPlataforma)
+            })
+            .OrderByDescending(g => g.Ganancias)
+            .Take(3)
+            .ToList();
 
-            return ServiceResult.Ok(new
+        var restauranteIds = pedidosPorRestaurante.Select(p => p.RestauranteId).ToList();
+
+        var restaurantesInfo = await (
+            from r in _context.Restaurantes
+            join u in _context.Usuarios on r.UsuarioId equals u.UsuarioId
+            where restauranteIds.Contains(r.RestauranteId)
+            select new { r.RestauranteId, r.NombreRestaurante, u.Email }
+        ).ToListAsync();
+
+        var topRestaurantes = new List<object>();
+        foreach (var pedidosRestaurante in pedidosPorRestaurante)
+        {
+            string nombreRestaurante = "—";
+            string email = "—";
+
+            var info = restaurantesInfo.FirstOrDefault(r => r.RestauranteId == pedidosRestaurante.RestauranteId);
+            if (info != null)
             {
-                GananciasHoy = gananciasHoy,
-                PedidosEntregadosHoy = pedidosEntregadosHoy.Count,
-                TopRestaurantes = topRestaurantes
+                nombreRestaurante = info.NombreRestaurante;
+                email = info.Email;
+            }
+
+            topRestaurantes.Add(new
+            {
+                pedidosRestaurante.RestauranteId,
+                NombreRestaurante = nombreRestaurante,
+                Email = email,
+                pedidosRestaurante.Pedidos,
+                pedidosRestaurante.Ganancias
             });
         }
-    
+
+        return ServiceResult.Ok(new
+        {
+            Periodo = periodoUsado,
+            Ganancias = gananciasPeriodo,
+            PedidosEntregados = pedidosEntregadosPeriodo.Count,
+            TopRestaurantes = topRestaurantes
+        });
+    }
 }

@@ -179,6 +179,8 @@ export function obtenerResumenUsuarios() {
     return apiClient.get('/api/Administrador/usuarios/resumen')
 }
 
-export function obtenerEstadisticasDashboard() {
-    return apiClient.get('/api/Administrador/dashboard')
+export function obtenerEstadisticasDashboard(periodo = 'hoy') {
+    return apiClient.get('/api/Administrador/dashboard', {
+        params: { periodo }
+    })
 }
