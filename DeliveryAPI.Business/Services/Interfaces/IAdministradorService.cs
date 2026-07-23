@@ -19,4 +19,7 @@ public interface IAdministradorService
     Task<ServiceResult> ObtenerResumenUsuarios();
 
     Task<ServiceResult> CambiarEstadoUsuario(int usuarioId);
+
+    // periodo puede ser: hoy, semana, mes, anio
+    Task<ServiceResult> ObtenerEstadisticasDashboard(string? periodo);
 }
