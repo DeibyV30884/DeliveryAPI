@@ -218,5 +218,66 @@ public class AdministradorService : IAdministradorService
                 ? "Usuario activado correctamente"
                 : "Usuario desactivado correctamente"
         });
+        
+        
     }
+    
+    public async Task<ServiceResult> ObtenerEstadisticasDashboard()
+        {
+            var ahora = DateTime.Now;
+            var hoy = ahora.Date;
+            var inicioMes = new DateTime(ahora.Year, ahora.Month, 1);
+            var pedidosEntregadosHoy = await _context.Pedidos
+                .Where(p => p.Estado == "Entregado"
+                            && p.FechaEntrega != null
+                            && p.FechaEntrega.Value.Date == hoy)
+                .ToListAsync();
+
+            var gananciasHoy = pedidosEntregadosHoy.Sum(p => p.ComisionPlataforma);
+
+            var pedidosDelMesPorRestaurante = await _context.Pedidos
+                .Where(p => p.Estado == "Entregado"
+                            && p.FechaEntrega != null
+                            && p.FechaEntrega.Value >= inicioMes)
+                .GroupBy(p => p.RestauranteId)
+                .Select(g => new
+                {
+                    RestauranteId = g.Key,
+                    Pedidos = g.Count(),
+                    Ganancias = g.Sum(p => p.ComisionPlataforma)
+                })
+                .OrderByDescending(g => g.Ganancias)
+                .Take(2)
+                .ToListAsync();
+
+            var restauranteIds = pedidosDelMesPorRestaurante.Select(p => p.RestauranteId).ToList();
+
+            var restaurantesInfo = await (
+                from r in _context.Restaurantes
+                join u in _context.Usuarios on r.UsuarioId equals u.UsuarioId
+                where restauranteIds.Contains(r.RestauranteId)
+                select new { r.RestauranteId, r.NombreRestaurante, u.Email }
+            ).ToListAsync();
+
+            var topRestaurantes = pedidosDelMesPorRestaurante.Select(p =>
+            {
+                var info = restaurantesInfo.FirstOrDefault(r => r.RestauranteId == p.RestauranteId);
+                return new
+                {
+                    p.RestauranteId,
+                    NombreRestaurante = info?.NombreRestaurante ?? "—",
+                    Email = info?.Email ?? "—",
+                    p.Pedidos,
+                    p.Ganancias
+                };
+            }).ToList();
+
+            return ServiceResult.Ok(new
+            {
+                GananciasHoy = gananciasHoy,
+                PedidosEntregadosHoy = pedidosEntregadosHoy.Count,
+                TopRestaurantes = topRestaurantes
+            });
+        }
+    
 }

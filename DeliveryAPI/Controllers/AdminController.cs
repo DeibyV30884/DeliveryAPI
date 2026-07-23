@@ -99,4 +99,13 @@ public class AdministradorController : ControllerBase
 
         return Ok(resultado.Datos);
     }
+    
+    [HttpGet("dashboard")]
+    public async Task<IActionResult> ObtenerEstadisticasDashboard()
+    {
+        var resultado = await _administradorService.ObtenerEstadisticasDashboard();
+        if (!resultado.Exito)
+            return BadRequest(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
+    }
 }

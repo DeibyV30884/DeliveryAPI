@@ -174,3 +174,11 @@ export function obtenerHistorialRecargas() {
 export function crearRecargaSaldo(datos) {
     return apiClient.post('/api/RecargasSaldo', datos)
 }
+
+export function obtenerResumenUsuarios() {
+    return apiClient.get('/api/Administrador/usuarios/resumen')
+}
+
+export function obtenerEstadisticasDashboard() {
+    return apiClient.get('/api/Administrador/dashboard')
+}
