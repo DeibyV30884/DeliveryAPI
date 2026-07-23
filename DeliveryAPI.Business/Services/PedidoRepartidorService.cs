@@ -18,32 +18,64 @@ public class PedidoRepartidorService : IPedidoRepartidorService
     {
         return await _context.Repartidores
             .FirstOrDefaultAsync(r => r.UsuarioId == usuarioId);
-    } 
+    }
+
+    // Arma el nombre completo del cliente revisando primero que los datos existan
+    private string ObtenerNombreCliente(Pedido pedido)
+    {
+        if (pedido.Cliente != null && pedido.Cliente.Usuario != null)
+        {
+            return pedido.Cliente.Usuario.Nombre + " " + pedido.Cliente.Usuario.Apellido;
+        }
+
+        return "Cliente";
+    }
+
+    // Convierte los detalles del pedido en una lista simple de nombre + cantidad
+    private List<object> ObtenerProductos(Pedido pedido)
+    {
+        var productos = new List<object>();
+
+        foreach (var detalle in pedido.DetallesPedido)
+        {
+            if (detalle.Producto != null)
+            {
+                productos.Add(new { detalle.Producto.Nombre, detalle.Cantidad });
+            }
+        }
+
+        return productos;
+    }
 
     public async Task<ServiceResult> ObtenerPedidoAsignadoPendiente(int usuarioId)
     {
         var repartidor = await ObtenerRepartidorPorUsuario(usuarioId);
         if (repartidor == null)
             return ServiceResult.Fallo("No se encontró un repartidor asociado a este usuario");
-        
+
         var pedido = await _context.Pedidos
+            .Include(p => p.Cliente)
+            .ThenInclude(c => c.Usuario)
+            .Include(p => p.DetallesPedido)
+            .ThenInclude(d => d.Producto)
             .Where(p => p.RepartidorId == repartidor.RepartidorId && p.Estado == "Pendiente")
-            .Select(p => new
-            {
-                p.PedidoId,
-                Cliente = p.Cliente!.Usuario!.Nombre + " " + p.Cliente.Usuario.Apellido,
-                p.DireccionEntrega,
-                p.DistanciaKm,
-                p.TiempoEstimadoMin,
-                p.Total,
-                Productos = p.DetallesPedido.Select(d => new { d.Producto!.Nombre, d.Cantidad })
-            })
             .FirstOrDefaultAsync();
 
         if (pedido == null)
             return ServiceResult.Fallo("No tienes ningún pedido pendiente");
 
-        return ServiceResult.Ok(pedido);
+        var resultado = new
+        {
+            pedido.PedidoId,
+            Cliente = ObtenerNombreCliente(pedido),
+            pedido.DireccionEntrega,
+            pedido.DistanciaKm,
+            pedido.TiempoEstimadoMin,
+            pedido.Total,
+            Productos = ObtenerProductos(pedido)
+        };
+
+        return ServiceResult.Ok(resultado);
     }
 
     public async Task<ServiceResult> ObtenerPedidoActivo(int usuarioId)
@@ -53,24 +85,30 @@ public class PedidoRepartidorService : IPedidoRepartidorService
             return ServiceResult.Fallo("No se encontró un repartidor asociado a este usuario");
 
         var pedido = await _context.Pedidos
+            .Include(p => p.Cliente)
+            .ThenInclude(c => c.Usuario)
+            .Include(p => p.DetallesPedido)
+            .ThenInclude(d => d.Producto)
             .Where(p => p.RepartidorId == repartidor.RepartidorId && p.Estado == "EnCamino")
-            .Select(p => new
-            {
-                p.PedidoId,
-                Cliente = p.Cliente!.Usuario!.Nombre + " " +p.Cliente.Usuario.Apellido,
-                p.DireccionEntrega,
-                p.LatitudEntrega,
-                p.LongitudEntrega,
-                p.DistanciaKm,
-                p.TiempoEstimadoMin,
-                p.Total, 
-                Productos = p.DetallesPedido.Select(d => new { d.Producto!.Nombre, d.Cantidad })
-            })
             .FirstOrDefaultAsync();
 
         if (pedido == null)
             return ServiceResult.Fallo("No tiene ningún pedido activo en este momento");
-        return ServiceResult.Ok(pedido);
+
+        var resultado = new
+        {
+            pedido.PedidoId,
+            Cliente = ObtenerNombreCliente(pedido),
+            pedido.DireccionEntrega,
+            pedido.LatitudEntrega,
+            pedido.LongitudEntrega,
+            pedido.DistanciaKm,
+            pedido.TiempoEstimadoMin,
+            pedido.Total,
+            Productos = ObtenerProductos(pedido)
+        };
+
+        return ServiceResult.Ok(resultado);
     }
 
     public async Task<ServiceResult> AceptarPedido(int usuarioId, int pedidoId)
@@ -90,7 +128,7 @@ public class PedidoRepartidorService : IPedidoRepartidorService
             return ServiceResult.Fallo("Este pedido ya no está pendiente de respuesta");
 
         pedido.Estado = "EnCamino";
-        pedido.FechaInicioEnCamino = DateTime.Now; // NUEVO: arrancamos el cronómetro de la emulación
+        pedido.FechaInicioEnCamino = DateTime.Now; // arrancamos el cronómetro de la emulación
         await _context.SaveChangesAsync();
 
         return ServiceResult.Ok(new { pedido.PedidoId, pedido.Estado });
@@ -111,7 +149,7 @@ public class PedidoRepartidorService : IPedidoRepartidorService
 
         if (pedido.Estado != "Pendiente")
             return ServiceResult.Fallo("Ya no puedes devolver este pedido, revisa su estado actual");
-        
+
         pedido.RepartidorId = null;
         repartidor.Disponible = true;
 
@@ -147,13 +185,13 @@ public class PedidoRepartidorService : IPedidoRepartidorService
 
         return ServiceResult.Ok(new { pedido.PedidoId, pedido.Estado, pedido.FechaEntrega });
     }
-    
+
     public async Task<ServiceResult> ObtenerEstadoRegreso(int usuarioId)
     {
         var repartidor = await ObtenerRepartidorPorUsuario(usuarioId);
         if (repartidor == null)
             return ServiceResult.Fallo("No se encontró un repartidor asociado a este usuario");
-        
+
         var pedido = await _context.Pedidos
             .Include(p => p.Restaurante)
             .Where(p => p.RepartidorId == repartidor.RepartidorId
@@ -174,7 +212,7 @@ public class PedidoRepartidorService : IPedidoRepartidorService
         if (fraccion > 1) fraccion = 1;
         if (fraccion < 0) fraccion = 0;
 
-    // El regreso va al reves: de la entrega hacia el restaurante
+        // El regreso va al reves: de la entrega hacia el restaurante
         var latOrigen = (double)pedido.LatitudEntrega;
         var lngOrigen = (double)pedido.LongitudEntrega;
         var latDestino = (double)pedido.Restaurante!.Latitud;
@@ -200,5 +238,4 @@ public class PedidoRepartidorService : IPedidoRepartidorService
             YaLlego = yaLlego
         });
     }
-    
 }

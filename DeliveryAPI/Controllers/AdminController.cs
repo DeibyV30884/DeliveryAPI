@@ -57,4 +57,46 @@ public class AdministradorController : ControllerBase
             return BadRequest(new { mensaje = resultado.Mensaje });
         return Ok(resultado.Datos);
     }
+    
+    [HttpGet("usuarios")]
+    public async Task<IActionResult> ObtenerUsuarios(
+        [FromQuery] string? busqueda,
+        [FromQuery] string? rol,
+        [FromQuery] int pagina = 1,
+        [FromQuery] int tamanoPagina = 10)
+    {
+        var resultado = await _administradorService.ObtenerUsuarios(
+            busqueda,
+            rol,
+            pagina,
+            tamanoPagina
+        );
+
+        if (!resultado.Exito)
+            return BadRequest(new { mensaje = resultado.Mensaje });
+
+        return Ok(resultado.Datos);
+    }
+
+    [HttpGet("usuarios/resumen")]
+    public async Task<IActionResult> ObtenerResumenUsuarios()
+    {
+        var resultado = await _administradorService.ObtenerResumenUsuarios();
+
+        if (!resultado.Exito)
+            return BadRequest(new { mensaje = resultado.Mensaje });
+
+        return Ok(resultado.Datos);
+    }
+
+    [HttpPut("usuarios/{usuarioId}/estado")]
+    public async Task<IActionResult> CambiarEstadoUsuario(int usuarioId)
+    {
+        var resultado = await _administradorService.CambiarEstadoUsuario(usuarioId);
+
+        if (!resultado.Exito)
+            return NotFound(new { mensaje = resultado.Mensaje });
+
+        return Ok(resultado.Datos);
+    }
 }

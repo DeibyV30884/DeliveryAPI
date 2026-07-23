@@ -103,4 +103,120 @@ public class AdministradorService : IAdministradorService
 
         return ServiceResult.Ok(new { mensaje = "Perfil desactivado correctamente" });
     }
+    
+    public async Task<ServiceResult> ObtenerUsuarios(
+        string? busqueda,
+        string? rol,
+        int pagina,
+        int tamanoPagina)
+        {
+        pagina = pagina < 1 ? 1 : pagina;
+        tamanoPagina = tamanoPagina < 1 ? 10 : tamanoPagina;
+
+        var consulta = _context.Usuarios.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(busqueda))
+        {
+            busqueda = busqueda.Trim();
+
+            consulta = consulta.Where(u =>
+                u.Nombre.Contains(busqueda) ||
+                (u.Apellido != null && u.Apellido.Contains(busqueda)) ||
+                u.Email.Contains(busqueda) ||
+                (u.Telefono != null && u.Telefono.Contains(busqueda)) ||
+                (u.Cedula != null && u.Cedula.Contains(busqueda)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(rol) && rol != "Todos")
+        {
+            consulta = consulta.Where(u => u.Rol == rol);
+        }
+
+        var totalUsuarios = await consulta.CountAsync();
+
+        var usuarios = await consulta
+            .OrderByDescending(u => u.FechaRegistro)
+            .Skip((pagina - 1) * tamanoPagina)
+            .Take(tamanoPagina)
+            .Select(u => new
+            {
+                u.UsuarioId,
+                u.Nombre,
+                u.Apellido,
+                u.Email,
+                u.Telefono,
+                u.Cedula,
+                u.Rol,
+                u.Activo,
+                u.FechaRegistro
+            })
+            .ToListAsync();
+
+        var totalPaginas = (int)Math.Ceiling(
+            totalUsuarios / (double)tamanoPagina
+        );
+
+        return ServiceResult.Ok(new
+        {
+            usuarios,
+            paginaActual = pagina,
+            tamanoPagina,
+            totalUsuarios,
+            totalPaginas
+        });
+    }
+
+    public async Task<ServiceResult> ObtenerResumenUsuarios()
+    {
+        var clientes = await _context.Usuarios
+            .CountAsync(u => u.Rol == "Cliente");
+
+        var restaurantes = await _context.Usuarios
+            .CountAsync(u => u.Rol == "Restaurante");
+
+        var repartidores = await _context.Usuarios
+            .CountAsync(u => u.Rol == "Repartidor");
+
+        var administradores = await _context.Usuarios
+            .CountAsync(u => u.Rol == "Administrador");
+
+        var activos = await _context.Usuarios
+            .CountAsync(u => u.Activo);
+
+        var inactivos = await _context.Usuarios
+            .CountAsync(u => !u.Activo);
+
+        return ServiceResult.Ok(new
+        {
+            clientes,
+            restaurantes,
+            repartidores,
+            administradores,
+            activos,
+            inactivos,
+            total = clientes + restaurantes + repartidores + administradores
+        });
+    }
+
+    public async Task<ServiceResult> CambiarEstadoUsuario(int usuarioId)
+    {
+        var usuario = await _context.Usuarios
+            .FirstOrDefaultAsync(u => u.UsuarioId == usuarioId);
+
+        if (usuario == null)
+            return ServiceResult.Fallo("Usuario no encontrado");
+
+        usuario.Activo = !usuario.Activo;
+
+        await _context.SaveChangesAsync();
+
+        return ServiceResult.Ok(new
+        {
+            usuario.UsuarioId,
+            usuario.Activo,
+            mensaje = usuario.Activo
+                ? "Usuario activado correctamente"
+                : "Usuario desactivado correctamente"
+        });
+    }
 }

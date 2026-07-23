@@ -86,8 +86,9 @@ builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IPedidoService, PedidoService>();
 builder.Services.AddScoped<IImagenService, ImagenService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
+//esta es para Servicio de Gestion de recargas de saldo 
+builder.Services.AddScoped<IRecargaSaldoService, RecargaSaldoService>();
 builder.Services.AddScoped<ICalculadorCostosPedido, CalculadorCostosPedido>();
-builder.Services.AddScoped<IPedidoService, PedidoService>();
 builder.Services.AddScoped<IPedidoRestauranteService, PedidoRestauranteService>();
 builder.Services.AddScoped<IPedidoRepartidorService, PedidoRepartidorService>();
 

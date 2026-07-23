@@ -199,18 +199,51 @@ public class PedidoService : IPedidoService
             return ServiceResult.Fallo("Cliente no encontrado");
 
         var pedidos = await _context.Pedidos
+            .AsNoTracking()
             .Where(p => p.ClienteId == cliente.ClienteId)
             .OrderByDescending(p => p.FechaPedido)
             .Select(p => new
             {
                 p.PedidoId,
                 p.Estado,
+                p.Subtotal,
+                p.CostoEnvio,
                 p.Total,
+                p.DistanciaKm,
+                p.TiempoEstimadoMin,
                 p.FechaPedido,
                 p.FechaEntrega,
                 p.DireccionEntrega,
-                NombreRestaurante = p.Restaurante!.NombreRestaurante,
-                Productos = p.DetallesPedido.Select(d => new { d.Producto!.Nombre, d.Cantidad, d.PrecioUnitario, d.Subtotal })
+                p.LatitudEntrega,
+                p.LongitudEntrega,
+
+                NombreRestaurante = p.Restaurante != null
+                    ? p.Restaurante.NombreRestaurante
+                    : "Restaurante no disponible",
+
+                // Coordenadas del restaurante, necesarias para dibujar la ruta en el mapa
+                LatitudRestaurante = p.Restaurante != null
+                    ? p.Restaurante.Latitud
+                    : (decimal?)null,
+
+                LongitudRestaurante = p.Restaurante != null
+                    ? p.Restaurante.Longitud
+                    : (decimal?)null,
+
+                Productos = p.DetallesPedido
+                    .Select(d => new
+                    {
+                        d.ProductoId,
+
+                        Nombre = d.Producto != null
+                            ? d.Producto.Nombre
+                            : "Producto no disponible",
+
+                        d.Cantidad,
+                        d.PrecioUnitario,
+                        d.Subtotal
+                    })
+                    .ToList()
             })
             .ToListAsync();
 
