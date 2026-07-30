@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-    CalendarDays,
     PackageCheck,
-    RefreshCw,
-    RotateCcw,
     Wallet,
 } from 'lucide-react'
 import { obtenerHistorialEstadisticasRepartidor } from '../../api/repartidores'
@@ -18,11 +15,18 @@ const ESTADOS = [
     { valor: 'Cancelado', texto: 'Pedidos cancelados' },
 ]
 
+const PERIODOS = [
+    { valor: 'hoy', etiqueta: 'Hoy' },
+    { valor: 'semana', etiqueta: 'Semana' },
+    { valor: 'mes', etiqueta: 'Mes' },
+    { valor: 'anio', etiqueta: 'Año' },
+]
+
 const PEDIDOS_POR_PAGINA = 10
 
 function HistorialEstadisticas() {
     const [estado, setEstado] = useState('Entregado')
-    const [fecha, setFecha] = useState('')
+    const [periodo, setPeriodo] = useState('hoy')
 
     const [pedidos, setPedidos] = useState([])
     const [estadisticas, setEstadisticas] = useState({
@@ -46,7 +50,7 @@ function HistorialEstadisticas() {
             const respuesta =
                 await obtenerHistorialEstadisticasRepartidor({
                     estado,
-                    fecha,
+                    periodo,
                 })
 
             const datos = respuesta.data ?? {}
@@ -86,11 +90,19 @@ function HistorialEstadisticas() {
         } finally {
             setCargando(false)
         }
-    }, [estado, fecha])
+    }, [estado, periodo])
 
     useEffect(() => {
         cargarDatos()
     }, [cargarDatos])
+
+    function obtenerEtiquetaPeriodo(valor) {
+        const encontrado = PERIODOS.find((p) => p.valor === valor)
+        if (encontrado) {
+            return encontrado.etiqueta
+        }
+        return 'Hoy'
+    }
 
     function formatearMoneda(valor) {
         return new Intl.NumberFormat('es-CR', {
@@ -117,14 +129,10 @@ function HistorialEstadisticas() {
         }).format(new Date(fechaPedido))
     }
 
-    function limpiarFecha() {
-        setFecha('')
-    }
-
     function obtenerClaseEstado(estadoPedido) {
         switch (estadoPedido?.toLowerCase()) {
             case 'entregado':
-                return 'border-emerald-400 bg-emerald-500/20 text-emerald-100'
+                return 'border-lime-400 bg-lime-400 text-slate-900'
 
             case 'pendiente':
                 return 'border-amber-400 bg-amber-500/20 text-amber-100'
@@ -192,8 +200,8 @@ function HistorialEstadisticas() {
                     Historial de pedidos
                 </h2>
 
-                <div className="mb-7 grid gap-4 rounded-2xl border border-slate-700 bg-slate-700 p-5 md:grid-cols-2 xl:grid-cols-[1fr_1fr_auto]">
-                    <div>
+                <div className="mb-7 flex flex-col gap-4 rounded-2xl border border-slate-700 bg-slate-700 p-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="w-full lg:w-64">
                         <label
                             htmlFor="estado-pedido"
                             className="mb-2 block text-sm font-semibold text-slate-200"
@@ -207,7 +215,7 @@ function HistorialEstadisticas() {
                             onChange={(evento) =>
                                 setEstado(evento.target.value)
                             }
-                            className="w-full rounded-xl border border-slate-500 bg-slate-800 px-4 py-3 text-white outline-none transition focus:border-lime-400"
+                            className="h-12 w-full rounded-xl border border-slate-500 bg-slate-800 px-4 text-white outline-none transition focus:border-lime-400"
                         >
                             {ESTADOS.map((opcion) => (
                                 <option
@@ -221,58 +229,32 @@ function HistorialEstadisticas() {
                     </div>
 
                     <div>
-                        <label
-                            htmlFor="fecha-pedido"
-                            className="mb-2 block text-sm font-semibold text-slate-200"
-                        >
-                            Fecha
-                        </label>
+                        <span className="mb-2 block text-sm font-semibold text-slate-200">
+                            Periodo
+                        </span>
 
-                        <div className="flex items-center gap-2">
-                            <div className="relative flex-1">
-                                <input
-                                    id="fecha-pedido"
-                                    type="date"
-                                    value={fecha}
-                                    onChange={(evento) =>
-                                        setFecha(evento.target.value)
-                                    }
-                                    className="w-full rounded-xl border border-slate-500 bg-slate-800 px-4 py-3 pr-11 text-white outline-none transition [color-scheme:dark] focus:border-lime-400"
-                                />
+                        <div className="flex flex-wrap gap-2">
+                            {PERIODOS.map((p) => {
+                                let clase =
+                                    'flex h-12 items-center justify-center rounded-full border border-slate-600 px-4 text-sm font-semibold text-slate-300 transition hover:border-lime-400 hover:text-lime-400'
 
-                                <CalendarDays
-                                    size={20}
-                                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-300"
-                                />
-                            </div>
+                                if (p.valor === periodo) {
+                                    clase =
+                                        'flex h-12 items-center justify-center rounded-full border border-lime-400 bg-lime-400 px-4 text-sm font-semibold text-slate-900'
+                                }
 
-                            <button
-                                type="button"
-                                onClick={limpiarFecha}
-                                disabled={!fecha}
-                                title="Restablecer fecha"
-                                className="flex items-center gap-1 rounded-full border border-slate-400 px-3 py-3 text-xs font-semibold text-slate-200 transition hover:border-lime-400 hover:text-lime-400 disabled:cursor-not-allowed disabled:opacity-30"
-                            >
-                                <RotateCcw size={16} />
-                                Restablecer
-                            </button>
+                                return (
+                                    <button
+                                        key={p.valor}
+                                        type="button"
+                                        onClick={() => setPeriodo(p.valor)}
+                                        className={clase}
+                                    >
+                                        {p.etiqueta}
+                                    </button>
+                                )
+                            })}
                         </div>
-                    </div>
-
-                    <div className="flex items-end">
-                        <button
-                            type="button"
-                            onClick={cargarDatos}
-                            disabled={cargando}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-5 py-3 font-semibold text-slate-900 transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-60 xl:w-auto"
-                        >
-                            <RefreshCw
-                                size={19}
-                                className={cargando ? 'animate-spin' : ''}
-                            />
-
-                            Actualizar
-                        </button>
                     </div>
                 </div>
 
@@ -300,7 +282,7 @@ function HistorialEstadisticas() {
                         </p>
 
                         <p className="mt-1 text-sm text-slate-300">
-                            Cambia el estado o elimina el filtro de fecha.
+                            Cambia el estado o el periodo seleccionado.
                         </p>
                     </div>
                 )}
@@ -357,7 +339,7 @@ function HistorialEstadisticas() {
                                                 onClick={() =>
                                                     abrirMapa(pedido)
                                                 }
-                                                className="rounded-full border border-slate-400 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-lime-400 hover:text-lime-400 whitespace-nowrap"
+                                                className="rounded-full border border-slate-400 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-white hover:bg-white hover:text-slate-800 whitespace-nowrap"
                                             >
                                                 Ver ubicación
                                             </button>
@@ -406,41 +388,47 @@ function HistorialEstadisticas() {
 
                 <div className="mt-10">
                     <h2 className="mb-5 text-xl font-bold uppercase text-white">
-                        Estadísticas
+                        Estadísticas · {obtenerEtiquetaPeriodo(periodo)}
                     </h2>
 
-                    <div className="grid max-w-2xl gap-5 sm:grid-cols-2">
-                        <article className="rounded-2xl border-2 border-white bg-slate-900/40 p-6 text-center text-white">
-                            <PackageCheck
-                                size={32}
-                                className="mx-auto mb-3 text-lime-400"
-                            />
+                    <div className="grid gap-6 sm:grid-cols-2">
+                        <div className="rounded-2xl border border-white bg-slate-700 p-5">
+                            <div className="flex items-center justify-center gap-3">
+                                <PackageCheck
+                                    size={28}
+                                    className="text-lime-400"
+                                />
 
-                            <p className="text-lg font-semibold">
-                                Pedidos entregados
-                            </p>
+                                <div className="text-center">
+                                    <p className="text-2xl font-bold">
+                                        {estadisticas.pedidosEntregados}
+                                    </p>
+                                    <p className="mt-1 text-xs text-slate-300">
+                                        Pedidos entregados
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
 
-                            <p className="mt-3 text-3xl font-extrabold">
-                                {estadisticas.pedidosEntregados}
-                            </p>
-                        </article>
+                        <div className="rounded-2xl border border-white bg-slate-700 p-5">
+                            <div className="flex items-center justify-center gap-3">
+                                <Wallet
+                                    size={28}
+                                    className="text-lime-400"
+                                />
 
-                        <article className="rounded-2xl border-2 border-white bg-slate-900/40 p-6 text-center text-white">
-                            <Wallet
-                                size={32}
-                                className="mx-auto mb-3 text-lime-400"
-                            />
-
-                            <p className="text-lg font-semibold">
-                                Ganancias
-                            </p>
-
-                            <p className="mt-3 text-3xl font-extrabold">
-                                {formatearMoneda(
-                                    estadisticas.gananciasTotales
-                                )}
-                            </p>
-                        </article>
+                                <div className="text-center">
+                                    <p className="text-2xl font-bold text-lime-400">
+                                        {formatearMoneda(
+                                            estadisticas.gananciasTotales
+                                        )}
+                                    </p>
+                                    <p className="mt-1 text-xs text-slate-300">
+                                        Ganancias
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

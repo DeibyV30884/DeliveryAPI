@@ -11,10 +11,24 @@ public class PedidoService : IPedidoService
     private readonly IAppDbContext _context;
     private readonly ICalculadorCostosPedido _calculadorCostos;
 
+    // Misma velocidad y piso mínimo de duración que usa PedidoRepartidorService,
+    // para que la simulación que ve el cliente coincida con la que ve el repartidor.
+    private const double VELOCIDAD_KMH = 35.0;
+    private const double DURACION_MINIMA_MIN = 1.0;
+
     public PedidoService(IAppDbContext context, ICalculadorCostosPedido calculadorCostos)
     {
         _context = context;
         _calculadorCostos = calculadorCostos;
+    }
+
+    private double CalcularDuracionViajeMin(decimal distanciaKm)
+    {
+        double duracion = 0;
+        if (distanciaKm > 0)
+            duracion = (double)distanciaKm / VELOCIDAD_KMH * 60.0;
+
+        return Math.Max(duracion, DURACION_MINIMA_MIN);
     }
 
     public async Task<ServiceResult> PrevisualizarPedido(int usuarioId, PrevisualizarPedidoDto dto)
@@ -121,24 +135,20 @@ public class PedidoService : IPedidoService
             // Valores por defecto: si todavía no está "EnCamino", no simulamos movimiento
             double latActual = (double)pedido.Restaurante!.Latitud;
             double lngActual = (double)pedido.Restaurante.Longitud;
-            double tiempoRestanteMin = pedido.TiempoEstimadoMin;
+            double duracionViajeMin = CalcularDuracionViajeMin(pedido.DistanciaKm);
+            double tiempoRestanteMin = duracionViajeMin;
             double fraccion = 0;
             bool yaLlego = false;
 
             if (pedido.Estado == "EnCamino" && pedido.FechaInicioEnCamino.HasValue)
             {
                 var minutosTranscurridos = (DateTime.Now - pedido.FechaInicioEnCamino.Value).TotalMinutes;
-                var distanciaRecorridaKm = 35.0 * (minutosTranscurridos / 60.0);
 
-                // Duración real del viaje a 35 km/h — no usamos el TiempoEstimadoMin original,
-                // porque ese incluye tiempo de preparación del restaurante y no coincide con
-                // la velocidad fija que usa la simulación del mapa.
-                double duracionViajeMin = 0;
-                if (pedido.DistanciaKm > 0)
-                    duracionViajeMin = (double)pedido.DistanciaKm / 35.0 * 60.0;
-
-                if (pedido.DistanciaKm > 0)
-                    fraccion = distanciaRecorridaKm / (double)pedido.DistanciaKm;
+                // Duración real del viaje a 35 km/h (con piso mínimo) — no usamos el
+                // TiempoEstimadoMin original, porque ese incluye tiempo de preparación
+                // del restaurante y no coincide con la velocidad fija que usa la
+                // simulación del mapa.
+                fraccion = minutosTranscurridos / duracionViajeMin;
                 if (fraccion > 1) fraccion = 1;
                 if (fraccion < 0) fraccion = 0;
 

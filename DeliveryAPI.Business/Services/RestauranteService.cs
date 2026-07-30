@@ -273,4 +273,118 @@ public async Task<ServiceResult> EditarPerfil(int usuarioId, EditarRestauranteDt
         return ServiceResult.Ok(new { mensaje = "Perfil desactivado correctamente" });
     }
     
+    public async Task<ServiceResult> ObtenerRepartidoresUbicaciones(int usuarioId)
+{
+    var restaurante = await _context.Restaurantes
+        .FirstOrDefaultAsync(r => r.UsuarioId == usuarioId);
+    if (restaurante == null)
+        return ServiceResult.Fallo("No se encontró un restaurante asociado a este usuario");
+
+    var repartidores = await _context.Repartidores
+        .Include(r => r.Usuario)
+        .Where(r => r.RestauranteId == restaurante.RestauranteId && r.Activo)
+        .ToListAsync();
+
+    var resultado = new List<object>();
+
+    foreach (var r in repartidores)
+    {
+        var nombre = r.Usuario != null ? r.Usuario.Nombre + " " + r.Usuario.Apellido : "Repartidor";
+
+        // ¿Va en camino hacia un cliente?
+        var pedidoEnCamino = await _context.Pedidos
+            .FirstOrDefaultAsync(p => p.RepartidorId == r.RepartidorId && p.Estado == "EnCamino");
+
+        if (pedidoEnCamino != null)
+        {
+            var (fraccion, tiempoRestante) = CalcularProgreso(
+                pedidoEnCamino.FechaInicioEnCamino, pedidoEnCamino.DistanciaKm, pedidoEnCamino.TiempoEstimadoMin);
+
+            resultado.Add(new
+            {
+                r.RepartidorId,
+                Nombre = nombre,
+                Estado = "En camino",
+                pedidoEnCamino.PedidoId,
+                Origen = new { restaurante.Latitud, restaurante.Longitud },
+                Destino = new { Latitud = pedidoEnCamino.LatitudEntrega, Longitud = pedidoEnCamino.LongitudEntrega },
+                Fraccion = fraccion,
+                TiempoRestanteMin = Math.Round(tiempoRestante)
+            });
+            continue;
+        }
+
+        // ¿Está regresando al local después de una entrega?
+        var pedidoRegresando = await _context.Pedidos
+            .Where(p => p.RepartidorId == r.RepartidorId
+                     && p.Estado == "Entregado"
+                     && p.FechaInicioRegreso != null)
+            .OrderByDescending(p => p.FechaEntrega)
+            .FirstOrDefaultAsync();
+
+        if (pedidoRegresando != null && !r.Disponible)
+        {
+            var (fraccion, tiempoRestante) = CalcularProgreso(
+                pedidoRegresando.FechaInicioRegreso, pedidoRegresando.DistanciaKm, pedidoRegresando.TiempoEstimadoMin);
+
+            resultado.Add(new
+            {
+                r.RepartidorId,
+                Nombre = nombre,
+                Estado = "Regresando",
+                PedidoId = (int?)null,
+                Origen = new { Latitud = pedidoRegresando.LatitudEntrega, Longitud = pedidoRegresando.LongitudEntrega },
+                Destino = new { restaurante.Latitud, restaurante.Longitud },
+                Fraccion = fraccion,
+                TiempoRestanteMin = Math.Round(tiempoRestante)
+            });
+            continue;
+        }
+
+        // No tiene ningún viaje activo: está en el local
+        resultado.Add(new
+        {
+            r.RepartidorId,
+            Nombre = nombre,
+            Estado = "En local",
+            PedidoId = (int?)null,
+            Origen = (object?)null,
+            Destino = (object?)null,
+            Fraccion = (double?)null,
+            TiempoRestanteMin = (double?)null
+        });
+    }
+
+    return ServiceResult.Ok(new
+    {
+        Restaurante = new { restaurante.Latitud, restaurante.Longitud, restaurante.NombreRestaurante },
+        Repartidores = resultado
+    });
+}
+
+// Mismo cálculo de progreso a 35 km/h que usa el resto del sistema (cliente y repartidor)
+private (double fraccion, double tiempoRestanteMin) CalcularProgreso(
+    DateTime? inicio, decimal distanciaKm, int tiempoEstimadoMin)
+{
+    if (!inicio.HasValue)
+        return (0, tiempoEstimadoMin);
+
+    var minutosTranscurridos = (DateTime.Now - inicio.Value).TotalMinutes;
+    var distanciaRecorridaKm = 35.0 * (minutosTranscurridos / 60.0);
+
+    double duracionViajeMin = 0;
+    if (distanciaKm > 0)
+        duracionViajeMin = (double)distanciaKm / 35.0 * 60.0;
+
+    double fraccion = 0;
+    if (distanciaKm > 0)
+        fraccion = distanciaRecorridaKm / (double)distanciaKm;
+    fraccion = Math.Clamp(fraccion, 0, 1);
+
+    var tiempoRestante = duracionViajeMin - minutosTranscurridos;
+    if (tiempoRestante < 0) tiempoRestante = 0;
+
+    return (fraccion, tiempoRestante);
+}
+    
 }

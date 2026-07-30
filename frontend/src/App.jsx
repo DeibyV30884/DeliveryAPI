@@ -28,6 +28,9 @@ import GestionUsuarios from './pages/administrador/GestionUsuarios'
 import ConfirmarPedido from './pages/cliente/ConfirmarPedido'
 import SeguimientoPedido from './pages/cliente/SeguimientoPedido'
 import PedidosEntrantes from "./pages/restaurante/PedidosEntrantes";
+import MapaRepartidores from './pages/restaurante/MapaRepartidores'
+import DashboardRepartidor from './pages/repartidor/Dashboard'
+import PedidoActivo from './pages/repartidor/PedidoActivo'
 
 function App() {
     return (
@@ -71,7 +74,7 @@ function App() {
                         <Route path="gestionproducto" element={<GestionProductos />} />
                         <Route path="agregarproducto" element={<AgregarProducto />} />
                         <Route path="editarproducto/:id" element={<EditarProducto />} />
-                        <Route path="repartidores" element={<h1 className="text-white">Seguimiento pendiente</h1>} />
+                        <Route path="repartidores" element={<MapaRepartidores />} />
                         <Route path="pedidos" element={<PedidosEntrantes />} />
                     </Route>
 
@@ -83,26 +86,10 @@ function App() {
                             </RutaProtegida>
                         }
                     >
-                        <Route
-                            path="panelprincipal"
-                            element={
-                                <h1 className="text-white">
-                                    Panel Principal pendiente
-                                </h1>
-                            }
-                        />
-                        <Route
-                            path="pedidoactivo"
-                            element={
-                                <h1 className="text-white">
-                                    Pedido activo pendiente
-                                </h1>
-                            }
-                        />
-                        <Route
-                            path="historialyestadisticas"
-                            element={<HistorialEstadisticas />}
-                        />
+                        <Route index element={<Navigate to="panelprincipal" replace />} />
+                        <Route path="panelprincipal" element={<DashboardRepartidor />} />
+                        <Route path="pedidoactivo" element={<PedidoActivo />} />
+                        <Route path="historialyestadisticas" element={<HistorialEstadisticas />} />
                         <Route path="perfil" element={<PerfilRepartidor />} />
                     </Route>
 
