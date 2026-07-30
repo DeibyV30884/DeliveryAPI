@@ -24,7 +24,7 @@ function SidebarRepartidor() {
     }
 
     // Armamos la clase del aside a mano, dependiendo si el menú esta abierto o no
-    let claseDelAside = "fixed md:sticky top-0 left-0 z-50 h-screen w-72 md:w-56 shrink-0 bg-slate-800 flex flex-col justify-between py-6 shadow-2xl md:shadow-none transition-transform duration-300 ease-out md:translate-x-0 "
+    let claseDelAside = "fixed md:sticky top-0 left-0 z-50 h-screen w-72 md:w-64 shrink-0 bg-slate-800 flex flex-col justify-between py-6 shadow-2xl md:shadow-none transition-transform duration-300 ease-out md:translate-x-0 "
 
     if (menuAbierto) {
         claseDelAside = claseDelAside + "translate-x-0"
@@ -34,9 +34,9 @@ function SidebarRepartidor() {
 
     function estiloDelLink({ isActive }) {
         if (isActive) {
-            return "px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-none text-sm font-medium transition bg-lime-400 text-slate-900 md:bg-slate-600 md:text-lime-400"
+            return "px-4 py-3 rounded-xl text-sm font-medium transition bg-lime-400 text-slate-900"
         } else {
-            return "px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-none text-sm font-medium transition text-slate-200 hover:bg-slate-700"
+            return "px-4 py-3 rounded-xl text-sm font-medium transition text-slate-200 hover:bg-slate-700"
         }
     }
 
@@ -83,7 +83,7 @@ function SidebarRepartidor() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <nav className="flex flex-col gap-1 px-3 md:px-0">
+                    <nav className="flex flex-col gap-1 px-3">
                         {links.map((link) => {
                             return (
                                 <NavLink
@@ -99,7 +99,7 @@ function SidebarRepartidor() {
                     </nav>
                     <button
                         onClick={cerrarSesion}
-                        className="mx-3 md:mx-0 rounded-xl md:rounded px-4 md:px-6 py-3 md:py-4 text-left text-sm text-slate-200 transition hover:bg-slate-700"
+                        className="mx-3 rounded-xl px-4 py-3 text-left text-sm text-slate-200 transition hover:bg-slate-700"
                     >
                         Cerrar Sesión
                     </button>
