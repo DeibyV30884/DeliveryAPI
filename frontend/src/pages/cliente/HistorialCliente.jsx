@@ -121,19 +121,13 @@ function HistorialCliente() {
     function obtenerClaseEstado(estado) {
         switch (estado?.toLowerCase()) {
             case 'entregado':
-                return 'bg-emerald-500/20 text-emerald-100 border-emerald-400'
+                return 'border-lime-400 bg-lime-400 text-slate-900'
 
             case 'cancelado':
-                return 'bg-red-500/20 text-red-100 border-red-400'
-
             case 'pendiente':
-                return 'bg-amber-500/20 text-amber-100 border-amber-400'
-
             case 'en camino':
-                return 'bg-blue-500/20 text-blue-100 border-blue-400'
-
             default:
-                return 'bg-slate-500/20 text-slate-100 border-slate-400'
+                return 'border-white bg-white text-slate-800'
         }
     }
 
@@ -324,7 +318,7 @@ function HistorialCliente() {
                                             <button
                                                 type="button"
                                                 onClick={() => abrirMapa(pedido)}
-                                                className="rounded-full border border-slate-400 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-lime-400 hover:text-lime-400"
+                                                className="rounded-full border border-slate-400 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-white hover:bg-white hover:text-slate-800"
                                             >
                                                 Ver ubicación
                                             </button>

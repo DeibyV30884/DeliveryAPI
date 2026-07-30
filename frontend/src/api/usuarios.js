@@ -102,6 +102,10 @@ export function subirImagenRestaurante(archivo) {
     })
 }
 
+export function obtenerRepartidoresUbicacion() {
+    return apiClient.get('/api/Restaurante/repartidores/ubicaciones')
+}
+
 // Restaurante - Pedidos
 
 export function obtenerPedidosPendientesRestaurante() {
@@ -128,7 +132,7 @@ export function aceptarPedidoRestaurante(pedidoId) {
     return apiClient.post(`/api/Pedidos/restaurante/${pedidoId}/aceptar`)
 }
 
-// Repartidor
+// Repartidor - Perfil y disponibilidad
 
 export function obtenerPerfilRepartidor() {
     return apiClient.get('/api/Repartidores/perfil')
@@ -138,8 +142,48 @@ export function editarPerfilRepartidor(datos) {
     return apiClient.put('/api/Repartidores/perfil', datos)
 }
 
+export function cambiarDisponibilidad(disponible) {
+    return apiClient.put('/api/Repartidores/disponibilidad', disponible, {
+        headers: { 'Content-Type': 'application/json' }
+    })
+}
+
 export function desactivarPerfilRepartidor() {
     return apiClient.put('/api/Repartidores/perfil/desactivar')
+}
+
+export function obtenerHistorialEstadisticasRepartidor(estado, periodo) {
+    return apiClient.get('/api/Repartidores/historial-estadisticas', {
+        params: { estado, periodo }
+    })
+}
+
+// Repartidor - Pedidos
+
+export function obtenerAsignadoPendiente() {
+    return apiClient.get('/api/Pedidos/repartidor/asignado-pendiente')
+}
+
+export function obtenerPedidoActivoRepartidor() {
+    return apiClient.get('/api/Pedidos/repartidor/activo')
+}
+
+export function aceptarPedidoRepartidor(pedidoId) {
+    return apiClient.post(`/api/Pedidos/repartidor/${pedidoId}/aceptar`)
+}
+
+export function devolverPedidoRepartidor(pedidoId) {
+    return apiClient.post(`/api/Pedidos/repartidor/${pedidoId}/devolver`)
+}
+
+export function confirmarEntregaRepartidor(pedidoId, codigoConfirmacion) {
+    return apiClient.post(`/api/Pedidos/repartidor/${pedidoId}/confirmar-entrega`, JSON.stringify(codigoConfirmacion), {
+        headers: { 'Content-Type': 'application/json' }
+    })
+}
+
+export function obtenerEstadoRegreso() {
+    return apiClient.get('/api/Pedidos/repartidor/estado-regreso')
 }
 
 // Administrador

@@ -9,5 +9,5 @@ public interface IRepartidorService
     Task<ServiceResult> EditarPerfil(int usuarioId, EditarRepartidorDto dto);
     Task<ServiceResult> CambiarDisponibilidad(int usuarioId, bool disponible);
     Task<ServiceResult> DesactivarPerfil(int usuarioId);
-    Task<ServiceResult> ObtenerHistorialYEstadisticas(int usuarioId, string? estado, DateTime? fecha);
+    Task<ServiceResult> ObtenerHistorialYEstadisticas(int usuarioId, string? estado, string? periodo);
 }

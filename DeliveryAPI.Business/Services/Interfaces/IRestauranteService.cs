@@ -9,4 +9,5 @@ public interface IRestauranteService
     Task<ServiceResult> ObtenerPerfil(int usuarioId);
     Task<ServiceResult> EditarPerfil(int usuarioId, EditarRestauranteDto dto);
     Task<ServiceResult> DesactivarPerfil(int usuarioId);
+    Task<ServiceResult> ObtenerRepartidoresUbicaciones(int usuarioId);
 }

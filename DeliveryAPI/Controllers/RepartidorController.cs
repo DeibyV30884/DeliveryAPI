@@ -60,13 +60,13 @@ public class RepartidoresController : ControllerBase
     [HttpGet("historial-estadisticas")]
     public async Task<IActionResult> ObtenerHistorialYEstadisticas(
         [FromQuery] string? estado = null,
-        [FromQuery] DateTime? fecha = null)
+        [FromQuery] string? periodo = null)
     {
         var resultado =
             await _repartidorService.ObtenerHistorialYEstadisticas(
                 ObtenerUsuarioId(),
                 estado,
-                fecha
+                periodo
             );
 
         if (!resultado.Exito)

@@ -180,10 +180,34 @@ public class RepartidorService : IRepartidorService
         return pedido.FechaPedido;
     }
 
+    // Se calcula desde cuando empieza a contar el periodo pedido en hoy, semana, mes o año
+    // (mismo criterio que usa AdministradorService para su dashboard)
+    private DateTime CalcularInicioDePeriodo(string periodo, DateTime ahora)
+    {
+        if (periodo == "semana")
+        {
+            int diasDesdeLunes = ((int)ahora.DayOfWeek + 6) % 7;
+            return ahora.Date.AddDays(-diasDesdeLunes);
+        }
+
+        if (periodo == "mes")
+        {
+            return new DateTime(ahora.Year, ahora.Month, 1);
+        }
+
+        if (periodo == "anio" || periodo == "año")
+        {
+            return new DateTime(ahora.Year, 1, 1);
+        }
+
+        // "hoy" o cualquier valor no reconocido cae aqui
+        return ahora.Date;
+    }
+
     public async Task<ServiceResult> ObtenerHistorialYEstadisticas(
         int usuarioId,
-        string? estado, 
-        DateTime? fecha)
+        string? estado,
+        string? periodo)
     {
         var repartidor = await _context.Repartidores
             .AsNoTracking()
@@ -193,15 +217,14 @@ public class RepartidorService : IRepartidorService
             return ServiceResult.Fallo("Repartidor no encontrado");
 
         var consulta = _context.Pedidos
-            .AsNoTracking() 
-            .Include(p => p.Restaurante) 
+            .AsNoTracking()
+            .Include(p => p.Restaurante)
             .Include(p => p.Cliente)
             .ThenInclude(c => c.Usuario)
             .Where(p => p.RepartidorId == repartidor.RepartidorId);
-        
+
 
         if (!string.IsNullOrWhiteSpace(estado) &&
-            
             !estado.Equals("Todos", StringComparison.OrdinalIgnoreCase))
         {
             consulta = consulta.Where(p => p.Estado == estado);
@@ -215,6 +238,16 @@ public class RepartidorService : IRepartidorService
             .OrderByDescending(p => ObtenerFechaDeReferencia(p))
             .ToList();
 
+        // Periodo a usar para filtrar (hoy, semana, mes, anio), igual que en el dashboard de admin
+        string periodoUsado = periodo?.ToLower() ?? "hoy";
+        if (string.IsNullOrWhiteSpace(periodoUsado))
+        {
+            periodoUsado = "hoy";
+        }
+
+        var ahora = DateTime.Now;
+        var inicioPeriodo = CalcularInicioDePeriodo(periodoUsado, ahora);
+
         var pedidos = new List<object>();
         int pedidosEntregadosCount = 0;
         decimal gananciasTotales = 0m;
@@ -223,15 +256,10 @@ public class RepartidorService : IRepartidorService
         {
             var fechaDeReferencia = ObtenerFechaDeReferencia(p);
 
-            // Si el usuario pidio filtrar por un dia especifico, revisamos si el pedido cae ahi
-            if (fecha.HasValue)
+            // Filtramos por el periodo seleccionado (hoy / semana / mes / año)
+            if (fechaDeReferencia < inicioPeriodo || fechaDeReferencia > ahora)
             {
-                var fechaInicio = fecha.Value.Date;
-                var fechaFin = fechaInicio.AddDays(1);
-
-                if (fechaDeReferencia < fechaInicio || fechaDeReferencia >= fechaFin)
-                {
-                    continue;}
+                continue;
             }
 
             // Nombre del cliente
@@ -240,10 +268,12 @@ public class RepartidorService : IRepartidorService
             {
                 if (string.IsNullOrWhiteSpace(p.Cliente.Usuario.Apellido))
                 {
-                    nombreCliente = p.Cliente.Usuario.Nombre;}
+                    nombreCliente = p.Cliente.Usuario.Nombre;
+                }
                 else
                 {
-                    nombreCliente = p.Cliente.Usuario.Nombre + " " + p.Cliente.Usuario.Apellido;}
+                    nombreCliente = p.Cliente.Usuario.Nombre + " " + p.Cliente.Usuario.Apellido;
+                }
             }
 
             // Datos del restaurante, necesarios para dibujar la ruta en el mapa
@@ -257,23 +287,27 @@ public class RepartidorService : IRepartidorService
                 longitudRestaurante = p.Restaurante.Longitud;
             }
 
-            
-            // Tiempo que tardo el pedido: si ya se entrego usamos el tiempo real, si no el estimado
+            // Tiempo que tardo el pedido: si ya se entrego usamos el tiempo real del viaje
+            // (desde que el repartidor lo aceptó y arrancó, no desde que el cliente lo pidió,
+            // porque el pedido puede quedarse "Pendiente" un buen rato antes de ser aceptado
+            // y ese tiempo de espera no es parte del viaje de entrega). Si no, usamos el estimado.
             int tiempoMinutos;
-            if (p.FechaEntrega.HasValue)
+            if (p.FechaEntrega.HasValue && p.FechaInicioEnCamino.HasValue)
             {
-                int tiempoReal = (int)Math.Round((p.FechaEntrega.Value - p.FechaPedido).TotalMinutes);
+                int tiempoReal = (int)Math.Round((p.FechaEntrega.Value - p.FechaInicioEnCamino.Value).TotalMinutes);
                 if (tiempoReal > 0)
                 {
-                    tiempoMinutos = tiempoReal; }
-                
+                    tiempoMinutos = tiempoReal;
+                }
                 else
                 {
-                    tiempoMinutos = p.TiempoEstimadoMin; }
+                    tiempoMinutos = p.TiempoEstimadoMin;
+                }
             }
             else
             {
-                tiempoMinutos = p.TiempoEstimadoMin;}
+                tiempoMinutos = p.TiempoEstimadoMin;
+            }
 
             bool entregado = p.Estado.Equals("Entregado", StringComparison.OrdinalIgnoreCase);
 

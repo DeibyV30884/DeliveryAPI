@@ -85,4 +85,14 @@ public class RestauranteController : ControllerBase
             return BadRequest(new { mensaje = "No se pudieron extraer coordenadas del link" });
         return Ok(new { lat = coordenadas.Value.lat, lng = coordenadas.Value.lng });
     }
+    
+    [Authorize(Roles = "Restaurante")]
+    [HttpGet("repartidores/ubicaciones")]
+    public async Task<IActionResult> ObtenerRepartidoresUbicaciones()
+    {
+        var resultado = await _restauranteService.ObtenerRepartidoresUbicaciones(ObtenerUsuarioId());
+        if (!resultado.Exito)
+            return BadRequest(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
+    }
 }
