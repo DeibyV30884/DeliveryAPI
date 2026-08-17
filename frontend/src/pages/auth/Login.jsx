@@ -69,9 +69,9 @@ function Login() {
                             />
                         </div>
 
-                        <a href="#" className="text-slate-200 font-semibold text-sm hover:underline">
-                            ¿Olvidaste tu contraseña?
-                        </a>
+                        <Link to="/recuperar-contrasena" className="text-slate-200 font-semibold text-sm hover:underline">
+                            ¿Olvido su contraseña?
+                        </Link>
 
                         <button
                             type="submit"

@@ -60,4 +60,20 @@ public class UsuariosController : ControllerBase
             return BadRequest(new { mensaje = resultado.Mensaje });
         return Ok(resultado.Datos);
     }
+    
+    [HttpPost("recuperar-contrasena")]
+    public async Task<IActionResult> SolicitarRecuperacion(SolicitarRecuperacionDto dto)
+    {
+        var resultado = await _authService.SolicitarRecuperacion(dto);
+        return Ok(resultado.Datos);
+    }
+
+    [HttpPost("restablecer-contrasena")]
+    public async Task<IActionResult> RestablecerContrasena(RestablecerContrasenaDto dto)
+    {
+        var resultado = await _authService.RestablecerContrasena(dto);
+        if (!resultado.Exito)
+            return BadRequest(new { mensaje = resultado.Mensaje });
+        return Ok(resultado.Datos);
+    }
 }

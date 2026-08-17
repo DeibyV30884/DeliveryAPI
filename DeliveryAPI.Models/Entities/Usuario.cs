@@ -15,4 +15,6 @@ public class Usuario
     public string Rol { get; set; } = "";
     public bool Activo { get; set; } = true;
     public DateTime FechaRegistro { get; set; } = DateTime.Now;
+    public string? TokenRecuperacion { get; set; }
+    public DateTime? TokenRecuperacionExpira { get; set; }
 }
