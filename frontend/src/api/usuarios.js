@@ -228,3 +228,14 @@ export function obtenerEstadisticasDashboard(periodo = 'hoy') {
         params: { periodo }
     })
 }
+
+export function solicitarRecuperacionContrasena(email) {
+    return apiClient.post('/api/Usuarios/recuperar-contrasena', { email })
+}
+
+export function restablecerContrasena(token, nuevaContrasena) {
+    return apiClient.post('/api/Usuarios/restablecer-contrasena', {
+        token,
+        nuevaContrasena
+    })
+}

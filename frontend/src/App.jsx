@@ -31,6 +31,8 @@ import PedidosEntrantes from "./pages/restaurante/PedidosEntrantes";
 import MapaRepartidores from './pages/restaurante/MapaRepartidores'
 import DashboardRepartidor from './pages/repartidor/Dashboard'
 import PedidoActivo from './pages/repartidor/PedidoActivo'
+import RecuperarContrasena from './pages/auth/RecuperarContrasena'
+import RestablecerContrasena from './pages/auth/RestablecerContrasena'
 
 function App() {
     return (
@@ -42,6 +44,8 @@ function App() {
                     <Route path="/registro/cliente" element={<RegistroCliente />} />
                     <Route path="/registro/restaurante" element={<RegistroRestaurante />} />
                     <Route path="/registro/repartidor" element={<RegistroRepartidor />} />
+                    <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
+                    <Route path="/restablecer-contrasena" element={<RestablecerContrasena />} />
 
                     <Route
                         path="/cliente"
